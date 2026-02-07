@@ -1458,46 +1458,48 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
   }
 
   Widget _buildActiveAlertCard() {
-    return AnimatedBuilder(
-      animation: _pulseController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: 1.0 + (_pulseController.value * 0.02),
-          child: HealthCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Alert header
-                Row(
-                  children: [
-                    Icon(
-                      Icons.warning_rounded,
-                      color: GuardianColors.emergencyRed,
-                      size: 32,
+    return HealthCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Alert header
+          Row(
+            children: [
+              AnimatedBuilder(
+                animation: _pulseController,
+                builder: (context, child) {
+                  return Icon(
+                    Icons.warning_rounded,
+                    color: GuardianColors.emergencyRed.withOpacity(
+                      0.7 + (_pulseController.value * 0.3)
                     ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Fall Detected',
-                            style: TextStyle(
-                              color: GuardianColors.emergencyRed,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '2:34 PM • Kitchen Camera',
-                            style: TextStyle(
-                              color: GuardianColors.textSecondary,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+                    size: 32,
+                  );
+                },
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Fall Detected',
+                      style: TextStyle(
+                        color: GuardianColors.emergencyRed,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
+                    Text(
+                      '2:34 PM • Kitchen Camera',
+                      style: TextStyle(
+                        color: GuardianColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
                   ],
                 ),
                 
@@ -1570,9 +1572,6 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
                 ),
               ],
             ),
-          ),
-        );
-      },
     );
   }
 
