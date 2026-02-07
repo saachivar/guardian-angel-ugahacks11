@@ -1,7 +1,20 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-import tflite_runtime.interpreter as tflite
+# Prefer tflite-runtime, fall back to TensorFlow's TFLite interpreter on platforms without tflite-runtime
+try:
+    import tflite_runtime.interpreter as tflite
+    print("Using tflite-runtime interpreter")
+except Exception:
+    try:
+        import tensorflow as tf
+        class _TFWrapper:
+            Interpreter = tf.lite.Interpreter
+        tflite = _TFWrapper
+        print("tflite-runtime not available — using TensorFlow's TFLite Interpreter as fallback")
+    except Exception as e:
+        print(f"Error: Neither tflite_runtime nor tensorflow is available: {e}")
+        raise
 import time
 from collections import deque
 import requests # สำหรับ Telegram
@@ -18,7 +31,7 @@ MODEL_PATH = 'fall_detection_transformer.tflite'
 INPUT_TIMESTEPS = 30
 # NUM_FEATURES จะถูกกำหนดจาก NUM_KEYPOINTS * 3
 
-FALL_CONFIDENCE_THRESHOLD = 0.90
+FALL_CONFIDENCE_THRESHOLD = 0.70  # Adjusted for demo/testing (was 0.90)
 MIN_KEYPOINT_CONFIDENCE_FOR_NORMALIZATION = 0.3 # ค่าจาก normalize_skeleton
 
 # MediaPipe Tasks API (mp.solutions is deprecated)
