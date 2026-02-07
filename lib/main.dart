@@ -58,11 +58,10 @@ class _MainAppWrapperState extends State<MainAppWrapper> {
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: 1); // Start on Live Alerts
-    _currentIndex = 1;
+    _pageController = PageController(initialPage: 0); // Start on Home
+    _currentIndex = 0;
     
     _screens = [
-      const ConnectScreen(),
       const LiveAlertsHome(),
       ProfileScreen(themeManager: widget.themeManager),
     ];
@@ -114,9 +113,8 @@ class _MainAppWrapperState extends State<MainAppWrapper> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(0, Icons.link, 'Connect'),
-                _buildNavItem(1, Icons.home, 'Home'),
-                _buildNavItem(2, Icons.person, 'Profile'),
+                _buildNavItem(0, Icons.home, 'Home'),
+                _buildNavItem(1, Icons.person, 'Profile'),
               ],
             ),
           ),
@@ -338,14 +336,17 @@ class _HealthButtonState extends State<HealthButton> {
                     ),
                     const SizedBox(width: 8),
                   ],
-                  Text(
-                    widget.label,
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: widget.isPrimary 
-                          ? Colors.white 
-                          : (isDark ? HealthColors.darkTextPrimary : HealthColors.lightTextPrimary),
+                  Flexible(
+                    child: Text(
+                      widget.label,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: widget.isPrimary 
+                            ? Colors.white 
+                            : (isDark ? HealthColors.darkTextPrimary : HealthColors.lightTextPrimary),
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
@@ -685,7 +686,12 @@ class TechReasonChip extends StatelessWidget {
 
 // Screen 1: Connect & Pair
 class ConnectScreen extends StatefulWidget {
-  const ConnectScreen({super.key});
+  final bool showBackButton;
+  
+  const ConnectScreen({
+    super.key, 
+    this.showBackButton = false,
+  });
 
   @override
   State<ConnectScreen> createState() => _ConnectScreenState();
@@ -722,6 +728,28 @@ class _ConnectScreenState extends State<ConnectScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: GuardianColors.darkBg,
+      appBar: widget.showBackButton 
+          ? AppBar(
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              leading: IconButton(
+                icon: Icon(
+                  Icons.arrow_back, 
+                  color: GuardianColors.textPrimary,
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              title: const Text(
+                'Device Connection Settings',
+                style: TextStyle(
+                  color: GuardianColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              automaticallyImplyLeading: false,
+            )
+          : null,
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -814,12 +842,15 @@ class _ConnectScreenState extends State<ConnectScreen>
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
-                              Text(
-                                _isConnected ? 'Connected to Home Device' : 'Connect to Home Device',
-                                style: const TextStyle(
-                                  color: GuardianColors.textPrimary,
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
+                              Expanded(
+                                child: Text(
+                                  _isConnected ? 'Connected to Home Device' : 'Connect to Home Device',
+                                  style: const TextStyle(
+                                    color: GuardianColors.textPrimary,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -947,7 +978,6 @@ class _ConnectScreenState extends State<ConnectScreen>
                           ),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.qr_code_scanner,
@@ -955,12 +985,15 @@ class _ConnectScreenState extends State<ConnectScreen>
                               size: 20,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Tap to scan QR code for quick setup',
-                              style: TextStyle(
-                                color: GuardianColors.textSecondary,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                            Expanded(
+                              child: Text(
+                                'Tap to scan QR code for quick setup',
+                                style: TextStyle(
+                                  color: GuardianColors.textSecondary,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                           ],
@@ -2613,6 +2646,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               isPrimary: false,
             ),
             const SizedBox(height: 32),
+            _buildDeviceSettings(),
+            const SizedBox(height: 24),
             if (widget.themeManager != null) ...[
               _buildThemeSettings(),
               const SizedBox(height: 32),
@@ -2701,6 +2736,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDeviceSettings() {
+    return HealthCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.router, color: HealthColors.lightPrimary),
+              const SizedBox(width: 12),
+              const Text(
+                'Device Settings',
+                style: TextStyle(
+                  color: GuardianColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Manage your Guardian Angel device connection',
+            style: TextStyle(
+              color: GuardianColors.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 16),
+          HealthButton(
+            label: 'Device Connection Settings',
+            icon: Icons.settings,
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ConnectScreen(showBackButton: true),
+                ),
+              );
+              HapticFeedback.lightImpact();
+            },
+            isPrimary: false,
           ),
         ],
       ),
