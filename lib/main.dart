@@ -1199,14 +1199,17 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
   late AnimationController _pulseController;
   Timer? _eventTimer;
   
-  // Mock data - pre-connected for POC
-  bool _hasActiveAlert = true;  // Start with an active alert to show functionality
+  // System state management for Raspberry Pi integration
+  bool _hasActiveAlert = false;  // Default: no active alerts
   String _patientName = 'Anisha Dhawan';
   String _patientPhone = '+1 (678) 472-3672';
-  String _liveStatus = 'Fall Detected';
+  String _liveStatus = 'System Ready';  // Default status
   String _systemStatus = 'Connected - Home Guardian System';
   int _camerasOnline = 4;
-  String _lastActivity = 'Kitchen - 2 min ago';
+  String _lastActivity = 'System active - monitoring';
+  
+  // Demo controls for UGA Hacks presentation
+  bool _showDemoControls = true;
 
   @override
   void initState() {
@@ -1228,17 +1231,48 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
   }
 
   void _startEventSimulation() {
-    // Simulate a fall alert after 5 seconds for demo
-    _eventTimer = Timer(const Duration(seconds: 5), () {
-      if (mounted) {
-        setState(() {
-          _hasActiveAlert = true;
-          _liveStatus = 'Fall Detected';
-        });
-        _pulseController.repeat();
-        HapticFeedback.heavyImpact();
-      }
-    });
+    // This method will be replaced with real backend integration
+    // For now, it's for demo purposes only
+  }
+  
+  // Simulate receiving fall detection alert from Raspberry Pi
+  void _simulateFallDetection() {
+    if (mounted) {
+      setState(() {
+        _hasActiveAlert = true;
+        _liveStatus = 'Fall Detected';
+        _lastActivity = 'Kitchen - Just now';
+      });
+      _pulseController.repeat();
+      HapticFeedback.heavyImpact();
+      
+      // This is where backend integration would receive:
+      // - Fall detection timestamp
+      // - Video clip from Raspberry Pi
+      // - Confidence score
+      // - Location (if multiple cameras)
+    }
+  }
+  
+  // Method that will connect to Saachi's backend API
+  void _onBackendFallAlert(Map<String, dynamic> alertData) {
+    // Future integration point:
+    // alertData would contain:
+    // - timestamp
+    // - videoClipUrl
+    // - confidence
+    // - cameraLocation
+    // - patientId
+    
+    if (mounted) {
+      setState(() {
+        _hasActiveAlert = true;
+        _liveStatus = 'Fall Detected';
+        _lastActivity = '${alertData['location'] ?? 'Unknown'} - Just now';
+      });
+      _pulseController.repeat();
+      HapticFeedback.heavyImpact();
+    }
   }
 
   @override
@@ -1285,6 +1319,12 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
                       
                       // Recent Events
                       _buildRecentEventsSection(),
+                      
+                      // Demo Controls (for UGA Hacks presentation)
+                      if (_showDemoControls) ...[
+                        const SizedBox(height: 32),
+                        _buildDemoControls(),
+                      ],
                     ],
                   ),
                 ),
@@ -1919,7 +1959,8 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
     HapticFeedback.heavyImpact();
     setState(() {
       _hasActiveAlert = false;
-      _liveStatus = 'Safe';
+      _liveStatus = 'System Ready';
+      _lastActivity = 'System active - monitoring';
     });
     _pulseController.stop();
     
@@ -1975,6 +2016,60 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
 
   void _simulatePatientCall() {
     _makePhoneCall(_patientPhone, _patientName);
+  }
+  
+  Widget _buildDemoControls() {
+    return HealthCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.developer_mode, color: HealthColors.lightSecondary),
+              const SizedBox(width: 12),
+              const Text(
+                'Demo Controls (UGA Hacks)',
+                style: TextStyle(
+                  color: GuardianColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Simulate Raspberry Pi fall detection events',
+            style: TextStyle(
+              color: GuardianColors.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: HealthButton(
+                  label: 'Simulate Fall',
+                  icon: Icons.warning,
+                  onPressed: _hasActiveAlert ? () {} : _simulateFallDetection,
+                  isPrimary: !_hasActiveAlert,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: HealthButton(
+                  label: 'Clear Alert',
+                  icon: Icons.check_circle,
+                  onPressed: _hasActiveAlert ? _markResolved : () {},
+                  isPrimary: _hasActiveAlert,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
