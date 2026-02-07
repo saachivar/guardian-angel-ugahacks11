@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
-import 'dart:math' as math;
 import 'dart:async';
 
 void main() {
@@ -32,138 +31,7 @@ class GuardianAngelApp extends StatelessWidget {
           },
         ),
       ),
-      home: const MainAppWrapper(),
-    );
-  }
-}
-
-// Main app wrapper with navigation
-class MainAppWrapper extends StatefulWidget {
-  const MainAppWrapper({super.key});
-
-  @override
-  State<MainAppWrapper> createState() => _MainAppWrapperState();
-}
-
-class _MainAppWrapperState extends State<MainAppWrapper> {
-  int _currentIndex = 0;
-  late PageController _pageController;
-
-  final List<Widget> _screens = [
-    const ConnectScreen(),
-    const LiveAlertsHome(),
-    const ProfileScreen(),
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _pageController = PageController(initialPage: 1); // Start on Live Alerts
-    _currentIndex = 1;
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: GuardianColors.darkBg,
-      body: PageView(
-        controller: _pageController,
-        children: _screens,
-        onPageChanged: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              GuardianColors.cardBg.withOpacity(0.8),
-              GuardianColors.cardBg,
-            ],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: GuardianColors.lightGreen.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Container(
-            height: 80,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(0, Icons.link, 'Connect'),
-                _buildNavItem(1, Icons.home, 'Home'),
-                _buildNavItem(2, Icons.person, 'Profile'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isActive = _currentIndex == index;
-    return GestureDetector(
-      onTap: () {
-        _pageController.animateToPage(
-          index,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-        HapticFeedback.lightImpact();
-      },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isActive 
-              ? GuardianColors.lightGreen.withOpacity(0.1) 
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          border: isActive 
-              ? Border.all(color: GuardianColors.lightGreen.withOpacity(0.3))
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive 
-                  ? GuardianColors.lightGreen 
-                  : GuardianColors.textSecondary,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isActive 
-                    ? GuardianColors.lightGreen 
-                    : GuardianColors.textSecondary,
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-      ),
+      home: const ConnectScreen(),
     );
   }
 }
@@ -277,14 +145,11 @@ class _GlowButtonState extends State<GlowButton>
                         Icon(widget.icon, size: 20),
                         const SizedBox(width: 8),
                       ],
-                      Flexible(
-                        child: Text(
-                          widget.label,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+                      Text(
+                        widget.label,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -522,31 +387,27 @@ class TechReasonChip extends StatelessWidget {
             color: GuardianColors.lightBlue,
           ),
           const SizedBox(width: 6),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    color: GuardianColors.textSecondary,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: GuardianColors.textSecondary,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
                 ),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: GuardianColors.textPrimary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+              ),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: GuardianColors.textPrimary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
@@ -1036,13 +897,10 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
   late AnimationController _pulseController;
   Timer? _eventTimer;
   
-  // Mock data - pre-connected for POC
-  bool _hasActiveAlert = true;  // Start with an active alert to show functionality
+  // Mock data
+  bool _hasActiveAlert = false;
   String _patientName = 'Eleanor Johnson';
-  String _liveStatus = 'Fall Detected';
-  String _systemStatus = 'Connected - Home Guardian System';
-  int _camerasOnline = 4;
-  String _lastActivity = 'Kitchen - 2 min ago';
+  String _liveStatus = 'Safe';
 
   @override
   void initState() {
@@ -1059,8 +917,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
     );
     
     _glowController.repeat(reverse: true);
-    _pulseController.repeat(); // Start pulsing since we have an active alert
-    // _startEventSimulation(); // Removed for POC - start with active alert
+    _startEventSimulation();
   }
 
   void _startEventSimulation() {
@@ -1180,49 +1037,6 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
               
               const SizedBox(height: 8),
               
-              // Connection status
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: GuardianColors.safeGreen.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: GuardianColors.safeGreen.withOpacity(0.3),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: GuardianColors.safeGreen,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _systemStatus,
-                      style: const TextStyle(
-                        color: GuardianColors.textPrimary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '• $_camerasOnline cameras',
-                      style: const TextStyle(
-                        color: GuardianColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              const SizedBox(height: 20),
               // Patient name
               Row(
                 children: [
@@ -1469,85 +1283,76 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
           ),
         ),
         const SizedBox(height: 12),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: steps.asMap().entries.map((entry) {
-              final index = entry.key;
-              final step = entry.value;
-              final isCompleted = step['completed'] as bool;
-              
-              return SizedBox(
-                width: MediaQuery.of(context).size.width / steps.length - 16,
-                child: Row(
-                  children: [
-                    // Step indicator
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 500),
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
+        Row(
+          children: steps.asMap().entries.map((entry) {
+            final index = entry.key;
+            final step = entry.value;
+            final isCompleted = step['completed'] as bool;
+            
+            return Expanded(
+              child: Row(
+                children: [
+                  // Step indicator
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 500),
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: isCompleted 
+                          ? GuardianColors.safeGreen 
+                          : GuardianColors.cardBg,
+                      shape: BoxShape.circle,
+                      border: Border.all(
                         color: isCompleted 
                             ? GuardianColors.safeGreen 
-                            : GuardianColors.cardBg,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isCompleted 
-                              ? GuardianColors.safeGreen 
-                              : GuardianColors.glassBorder,
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        isCompleted ? Icons.check : step['icon'] as IconData,
-                        size: 12,
-                        color: isCompleted 
-                            ? GuardianColors.darkBg 
-                            : GuardianColors.textSecondary,
+                            : GuardianColors.glassBorder,
+                        width: 2,
                       ),
                     ),
-                    
-                    // Line connector (except for last item)
-                    if (index < steps.length - 1)
-                      Expanded(
-                        child: Container(
-                          height: 2,
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          decoration: BoxDecoration(
-                            color: isCompleted 
-                                ? GuardianColors.safeGreen.withOpacity(0.5)
-                                : GuardianColors.glassBorder,
-                            borderRadius: BorderRadius.circular(1),
-                          ),
+                    child: Icon(
+                      isCompleted ? Icons.check : step['icon'] as IconData,
+                      size: 12,
+                      color: isCompleted 
+                          ? GuardianColors.darkBg 
+                          : GuardianColors.textSecondary,
+                    ),
+                  ),
+                  
+                  // Line connector (except for last item)
+                  if (index < steps.length - 1)
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: isCompleted 
+                              ? GuardianColors.safeGreen.withOpacity(0.5)
+                              : GuardianColors.glassBorder,
+                          borderRadius: BorderRadius.circular(1),
                         ),
                       ),
-                  ],
-                ),
-              );
-            }).toList(),
-          ),
+                    ),
+                ],
+              ),
+            );
+          }).toList(),
         ),
         const SizedBox(height: 8),
         // Step labels
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: steps.map((step) => SizedBox(
-              width: MediaQuery.of(context).size.width / steps.length - 16,
-              child: Text(
-                step['title'] as String,
-                style: TextStyle(
-                  color: (step['completed'] as bool) 
-                      ? GuardianColors.textPrimary 
-                      : GuardianColors.textSecondary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
+        Row(
+          children: steps.map((step) => Expanded(
+            child: Text(
+              step['title'] as String,
+              style: TextStyle(
+                color: (step['completed'] as bool) 
+                    ? GuardianColors.textPrimary 
+                    : GuardianColors.textSecondary,
+                fontSize: 10,
+                fontWeight: FontWeight.w500,
               ),
-            )).toList(),
-          ),
+              textAlign: TextAlign.center,
+            ),
+          )).toList(),
         ),
       ],
     );
@@ -1673,21 +1478,10 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
 
   void _viewClip() {
     HapticFeedback.heavyImpact();
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        maxChildSize: 0.95,
-        minChildSize: 0.5,
-        builder: (context, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: GuardianColors.darkBg,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: const EventDetailScreen(),
-        ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const EventDetailScreen(),
       ),
     );
   }
@@ -1868,124 +1662,103 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: GuardianColors.darkBg,
-      body: Column(
-        children: [
-          // Modal header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 30,
-                  decoration: BoxDecoration(
-                    color: GuardianColors.lightBlue,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'Fall Analysis',
-                    style: TextStyle(
-                      color: GuardianColors.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.share, color: GuardianColors.lightBlue),
-                  onPressed: _shareAnalysis,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, color: GuardianColors.textSecondary),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: GuardianColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'Fall Analysis',
+          style: TextStyle(
+            color: GuardianColors.textPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
-          Expanded(
-            child: _isLoading ? _buildLoadingView() : _buildAnalysisView(),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.share, color: GuardianColors.lightBlue),
+            onPressed: _shareAnalysis,
           ),
         ],
       ),
+      body: _isLoading ? _buildLoadingView() : _buildAnalysisView(),
     );
   }
 
   Widget _buildLoadingView() {
-    return Expanded(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [GuardianColors.lightGreen, GuardianColors.lightBlue],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [GuardianColors.lightGreen, GuardianColors.lightBlue],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: GuardianColors.lightGreen.withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 5,
                 ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: GuardianColors.lightGreen.withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.analytics,
-                size: 60,
-                color: GuardianColors.darkBg,
-              ),
+              ],
             ),
-            const SizedBox(height: 32),
-            const Text(
-              'Analyzing Fall Event',
-              style: TextStyle(
-                color: GuardianColors.textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+            child: const Icon(
+              Icons.analytics,
+              size: 60,
+              color: GuardianColors.darkBg,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Processing video and sensor data...',
-              style: TextStyle(
-                color: GuardianColors.textSecondary,
-                fontSize: 16,
-              ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'Analyzing Fall Event',
+            style: TextStyle(
+              color: GuardianColors.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 32),
-            Container(
-              width: 250,
-              height: 6,
-              decoration: BoxDecoration(
-                color: GuardianColors.cardBg,
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: AnimatedBuilder(
-                animation: _progressAnimation,
-                builder: (context, child) {
-                  return FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: _progressAnimation.value,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [GuardianColors.lightGreen, GuardianColors.lightBlue],
-                        ),
-                        borderRadius: BorderRadius.circular(3),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Processing video and sensor data...',
+            style: TextStyle(
+              color: GuardianColors.textSecondary,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            width: 250,
+            height: 6,
+            decoration: BoxDecoration(
+              color: GuardianColors.cardBg,
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: AnimatedBuilder(
+              animation: _progressAnimation,
+              builder: (context, child) {
+                return FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: _progressAnimation.value,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [GuardianColors.lightGreen, GuardianColors.lightBlue],
                       ),
+                      borderRadius: BorderRadius.circular(3),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2159,29 +1932,26 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           ),
         ),
         const SizedBox(height: 16),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildVideoControlButton(
-                Icons.replay_10,
-                () => _jumpToTime(_currentTime - 10),
-              ),
-              const SizedBox(width: 24),
-              GlowButton(
-                label: _isPlaying ? 'Pause' : 'Play',
-                icon: _isPlaying ? Icons.pause : Icons.play_arrow,
-                onPressed: _togglePlayPause,
-                isPrimary: true,
-              ),
-              const SizedBox(width: 24),
-              _buildVideoControlButton(
-                Icons.forward_10,
-                () => _jumpToTime(_currentTime + 10),
-              ),
-            ],
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildVideoControlButton(
+              Icons.replay_10,
+              () => _jumpToTime(_currentTime - 10),
+            ),
+            const SizedBox(width: 24),
+            GlowButton(
+              label: _isPlaying ? 'Pause' : 'Play',
+              icon: _isPlaying ? Icons.pause : Icons.play_arrow,
+              onPressed: _togglePlayPause,
+              isPrimary: true,
+            ),
+            const SizedBox(width: 24),
+            _buildVideoControlButton(
+              Icons.forward_10,
+              () => _jumpToTime(_currentTime + 10),
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         GlowButton(
@@ -2418,306 +2188,6 @@ class _EventDetailScreenState extends State<EventDetailScreen>
         content: Text('Analysis report shared with care team'),
         backgroundColor: GuardianColors.lightBlue,
         behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-}
-
-// Screen 4: Profile/Caregivers (Enterprise look)
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
-
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  // Mock caregiver data
-  bool _notifyOnFall = true;
-  bool _callPrimaryAuto = true;
-  bool _messagePrimaryAuto = true;
-  bool _notifySecondary = true;
-  
-  final Map<String, String> _primaryCaregiver = {
-    'name': 'Sarah Johnson (Mom)',
-    'phone': '+1 (555) 234-5678',
-  };
-  
-  final Map<String, String> _secondaryCaregiver = {
-    'name': 'Michael Thompson (Aunt)',
-    'phone': '+1 (555) 876-5432',
-  };
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: GuardianColors.darkBg,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: const Text(
-          'Caregivers',
-          style: TextStyle(
-            color: GuardianColors.textPrimary,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        automaticallyImplyLeading: false,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildCaregiverCard(
-              'Primary Caregiver', 
-              _primaryCaregiver, 
-              isPrimary: true,
-            ),
-            const SizedBox(height: 24),
-            _buildCaregiverCard(
-              'Secondary Caregiver', 
-              _secondaryCaregiver, 
-              isPrimary: false,
-            ),
-            const SizedBox(height: 32),
-            _buildNotificationSettings(),
-            const SizedBox(height: 32),
-            _buildTestSection(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCaregiverCard(String title, Map<String, String> caregiver, {required bool isPrimary}) {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isPrimary ? Icons.star : Icons.person_add,
-                color: isPrimary ? GuardianColors.lightGreen : GuardianColors.lightBlue,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: const TextStyle(
-                  color: GuardianColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: GuardianColors.cardBg.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: GuardianColors.glassBorder,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.person,
-                      color: GuardianColors.textSecondary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        caregiver['name']!,
-                        style: const TextStyle(
-                          color: GuardianColors.textPrimary,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.phone,
-                      color: GuardianColors.textSecondary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      caregiver['phone']!,
-                      style: const TextStyle(
-                        color: GuardianColors.textSecondary,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotificationSettings() {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.notifications, color: GuardianColors.lightBlue),
-              const SizedBox(width: 12),
-              const Text(
-                'Alert Settings',
-                style: TextStyle(
-                  color: GuardianColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          _buildToggleSetting(
-            'Notify on fall',
-            'Send notifications when falls are detected',
-            _notifyOnFall,
-            (value) => setState(() => _notifyOnFall = value),
-          ),
-          const SizedBox(height: 16),
-          _buildToggleSetting(
-            'Call primary automatically',
-            'Auto-call primary caregiver on confirmed falls',
-            _callPrimaryAuto,
-            (value) => setState(() => _callPrimaryAuto = value),
-          ),
-          const SizedBox(height: 16),
-          _buildToggleSetting(
-            'Message primary automatically',
-            'Send SMS to primary caregiver instantly',
-            _messagePrimaryAuto,
-            (value) => setState(() => _messagePrimaryAuto = value),
-          ),
-          const SizedBox(height: 16),
-          _buildToggleSetting(
-            'Notify secondary on fall',
-            'Alert secondary caregiver after 2 minutes',
-            _notifySecondary,
-            (value) => setState(() => _notifySecondary = value),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleSetting(String title, String subtitle, bool value, ValueChanged<bool> onChanged) {
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  color: GuardianColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                subtitle,
-                style: const TextStyle(
-                  color: GuardianColors.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Transform.scale(
-          scale: 0.8,
-          child: Switch(
-            value: value,
-            onChanged: onChanged,
-            activeColor: GuardianColors.lightGreen,
-            activeTrackColor: GuardianColors.lightGreen.withOpacity(0.3),
-            inactiveThumbColor: GuardianColors.textSecondary,
-            inactiveTrackColor: GuardianColors.cardBg,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTestSection() {
-    return GlassCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.bug_report, color: GuardianColors.warningAmber),
-              const SizedBox(width: 12),
-              const Text(
-                'Test & Debug',
-                style: TextStyle(
-                  color: GuardianColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Send test notifications to verify your alert system',
-            style: TextStyle(
-              color: GuardianColors.textSecondary,
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 20),
-          GlowButton(
-            label: 'Send Test Alert',
-            icon: Icons.send,
-            onPressed: _sendTestAlert,
-            isPrimary: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _sendTestAlert() {
-    HapticFeedback.heavyImpact();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('🚨 Test alert sent to both caregivers'),
-        backgroundColor: GuardianColors.lightBlue,
-        behavior: SnackBarBehavior.floating,
-        action: SnackBarAction(
-          label: 'VIEW',
-          textColor: GuardianColors.textPrimary,
-          onPressed: () {
-            // Could show test results
-          },
-        ),
       ),
     );
   }
