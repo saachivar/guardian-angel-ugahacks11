@@ -76,8 +76,10 @@ class _MainAppWrapperState extends State<MainAppWrapper> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: GuardianColors.darkBg,
+      backgroundColor: isDark ? HealthColors.darkBackground : HealthColors.lightBackground,
       body: PageView(
         controller: _pageController,
         children: _screens,
@@ -252,7 +254,205 @@ class ThemeManager extends ChangeNotifier {
   );
 }
 
-// Legacy GuardianColors for backward compatibility (will be replaced gradually)
+// Professional Healthcare UI Components
+class HealthButton extends StatefulWidget {
+  final String label;
+  final IconData? icon;
+  final VoidCallback onPressed;
+  final bool isPrimary;
+  final bool isLoading;
+
+  const HealthButton({
+    super.key,
+    required this.label,
+    this.icon,
+    required this.onPressed,
+    this.isPrimary = false,
+    this.isLoading = false,
+  });
+
+  @override
+  State<HealthButton> createState() => _HealthButtonState();
+}
+
+class _HealthButtonState extends State<HealthButton> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) => setState(() => _isPressed = false),
+      onTapCancel: () => setState(() => _isPressed = false),
+      onTap: widget.onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        decoration: BoxDecoration(
+          color: widget.isPrimary
+              ? (isDark ? HealthColors.darkPrimary : HealthColors.lightPrimary)
+              : (isDark ? HealthColors.darkCardBg : HealthColors.lightCardBg),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: widget.isPrimary
+                ? Colors.transparent
+                : (isDark ? HealthColors.darkBorder : HealthColors.lightBorder),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: (widget.isPrimary 
+                  ? (isDark ? HealthColors.darkPrimary : HealthColors.lightPrimary)
+                  : Colors.black)
+                .withOpacity(_isPressed ? 0.3 : 0.1),
+              blurRadius: _isPressed ? 8 : 4,
+              offset: Offset(0, _isPressed ? 2 : 1),
+            ),
+          ],
+        ),
+        child: widget.isLoading
+            ? SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    widget.isPrimary 
+                        ? Colors.white 
+                        : (isDark ? HealthColors.darkPrimary : HealthColors.lightPrimary),
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.icon != null) ...[
+                    Icon(
+                      widget.icon, 
+                      size: 18,
+                      color: widget.isPrimary 
+                          ? Colors.white 
+                          : (isDark ? HealthColors.darkTextPrimary : HealthColors.lightTextPrimary),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    widget.label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: widget.isPrimary 
+                          ? Colors.white 
+                          : (isDark ? HealthColors.darkTextPrimary : HealthColors.lightTextPrimary),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class HealthCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final Color? backgroundColor;
+
+  const HealthCard({
+    super.key,
+    required this.child,
+    this.padding,
+    this.backgroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
+      padding: padding ?? const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: backgroundColor ?? (isDark ? HealthColors.darkCardBg : HealthColors.lightCardBg),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? HealthColors.darkBorder : HealthColors.lightBorder,
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+}
+
+class StatusIndicator extends StatelessWidget {
+  final String status;
+  final StatusType type;
+
+  const StatusIndicator({
+    super.key,
+    required this.status,
+    required this.type,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color statusColor;
+    IconData statusIcon;
+    
+    switch (type) {
+      case StatusType.active:
+        statusColor = HealthColors.emergencyRed;
+        statusIcon = Icons.warning;
+        break;
+      case StatusType.resolved:
+        statusColor = HealthColors.safeGreen;
+        statusIcon = Icons.check_circle;
+        break;
+      case StatusType.falseAlert:
+        statusColor = HealthColors.warningAmber;
+        statusIcon = Icons.info;
+        break;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: statusColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: statusColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(statusIcon, size: 14, color: statusColor),
+          const SizedBox(width: 6),
+          Text(
+            status,
+            style: TextStyle(
+              color: statusColor,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Legacy GuardianColors for backward compatibility (gradually replacing)
 class GuardianColors {
   static const lightGreen = HealthColors.lightPrimary;
   static const lightBlue = HealthColors.lightSecondary;
@@ -268,162 +468,7 @@ class GuardianColors {
   static const glassBorder = HealthColors.darkBorder;
 }
 
-// Premium UI Components
-class GlowButton extends StatefulWidget {
-  final String label;
-  final IconData? icon;
-  final VoidCallback onPressed;
-  final bool isPrimary;
-  final bool isLoading;
 
-  const GlowButton({
-    super.key,
-    required this.label,
-    required this.onPressed,
-    this.icon,
-    this.isPrimary = true,
-    this.isLoading = false,
-  });
-
-  @override
-  State<GlowButton> createState() => _GlowButtonState();
-}
-
-class _GlowButtonState extends State<GlowButton>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _glowAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _glowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
-    _controller.repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = widget.isPrimary
-        ? [GuardianColors.lightGreen, GuardianColors.glowGreen]
-        : [GuardianColors.lightBlue, GuardianColors.glowBlue];
-
-    return AnimatedBuilder(
-      animation: _glowAnimation,
-      builder: (context, child) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
-            boxShadow: [
-              BoxShadow(
-                color: colors[1].withOpacity(_glowAnimation.value * 0.6),
-                blurRadius: 20,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: ElevatedButton(
-            onPressed: widget.isLoading ? null : widget.onPressed,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: colors[0],
-              foregroundColor: GuardianColors.darkBg,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(28),
-                side: BorderSide(
-                  color: colors[1].withOpacity(_glowAnimation.value),
-                  width: 2,
-                ),
-              ),
-              elevation: 0,
-            ),
-            child: widget.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (widget.icon != null) ...[
-                        Icon(widget.icon, size: 20),
-                        const SizedBox(width: 8),
-                      ],
-                      Flexible(
-                        child: Text(
-                          widget.label,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class GlassCard extends StatelessWidget {
-  final Widget child;
-  final double blur;
-  final EdgeInsetsGeometry? padding;
-
-  const GlassCard({
-    super.key,
-    required this.child,
-    this.blur = 10,
-    this.padding,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: GuardianColors.glassBorder,
-          width: 1,
-        ),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            GuardianColors.cardBg.withOpacity(0.8),
-            GuardianColors.cardBg.withOpacity(0.4),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: GuardianColors.darkBg.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: padding ?? const EdgeInsets.all(20),
-        child: child,
-      ),
-    );
-  }
-}
 
 class ConfidenceRing extends StatefulWidget {
   final double confidence;
@@ -755,7 +800,7 @@ class _ConnectScreenState extends State<ConnectScreen>
                     const SizedBox(height: 48),
                     
                     // Connection card
-                    GlassCard(
+                    HealthCard(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -830,7 +875,7 @@ class _ConnectScreenState extends State<ConnectScreen>
                           Row(
                             children: [
                               Expanded(
-                                child: GlowButton(
+                                child: HealthButton(
                                   label: 'Test Connection',
                                   icon: Icons.wifi_find,
                                   onPressed: _testConnection,
@@ -840,7 +885,7 @@ class _ConnectScreenState extends State<ConnectScreen>
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: GlowButton(
+                                child: HealthButton(
                                   label: _isConnected ? 'Continue' : 'Save & Continue',
                                   icon: _isConnected ? Icons.arrow_forward : Icons.save,
                                   onPressed: _isConnected ? _navigateToHome : _saveAndContinue,
@@ -1032,7 +1077,7 @@ class _ConnectScreenState extends State<ConnectScreen>
             onPressed: () => Navigator.pop(context),
             child: const Text('Maybe Later'),
           ),
-          GlowButton(
+          HealthButton(
             label: 'Coming Soon',
             onPressed: () => Navigator.pop(context),
             isPrimary: false,
@@ -1383,7 +1428,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
       builder: (context, child) {
         return Transform.scale(
           scale: 1.0 + (_pulseController.value * 0.02),
-          child: GlassCard(
+          child: HealthCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1453,7 +1498,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
                 Row(
                   children: [
                     Expanded(
-                      child: GlowButton(
+                      child: HealthButton(
                         label: 'View Clip',
                         icon: Icons.play_circle_outline,
                         onPressed: _viewClip,
@@ -1462,7 +1507,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: GlowButton(
+                      child: HealthButton(
                         label: 'Call Now',
                         icon: Icons.phone,
                         onPressed: _showCallOptions,
@@ -1683,7 +1728,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
   Widget _buildEventCard(Map<String, String> event) {
     final statusType = event['type'] == 'resolved' ? StatusType.resolved : StatusType.active;
     
-    return GlassCard(
+    return HealthCard(
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
@@ -1799,7 +1844,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
             ),
             const SizedBox(height: 24),
             
-            GlowButton(
+            HealthButton(
               label: 'Call 911',
               icon: Icons.emergency,
               onPressed: () {
@@ -1811,7 +1856,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
             
             const SizedBox(height: 12),
             
-            GlowButton(
+            HealthButton(
               label: 'Call Eleanor',
               icon: Icons.person,
               onPressed: () {
@@ -2090,7 +2135,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Widget _buildVideoPlayer() {
-    return GlassCard(
+    return HealthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2253,7 +2298,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                 () => _jumpToTime(_currentTime - 10),
               ),
               const SizedBox(width: 24),
-              GlowButton(
+              HealthButton(
                 label: _isPlaying ? 'Pause' : 'Play',
                 icon: _isPlaying ? Icons.pause : Icons.play_arrow,
                 onPressed: _togglePlayPause,
@@ -2268,7 +2313,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           ),
         ),
         const SizedBox(height: 12),
-        GlowButton(
+        HealthButton(
           label: 'Replay Key Moment',
           icon: Icons.replay,
           onPressed: () => _jumpToTime(_fallTimestamp - 1),
@@ -2295,7 +2340,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Widget _buildExplainabilityCard() {
-    return GlassCard(
+    return HealthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2413,7 +2458,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
         Row(
           children: [
             Expanded(
-              child: GlowButton(
+              child: HealthButton(
                 label: 'Confirm Fall',
                 icon: Icons.warning,
                 onPressed: _confirmFall,
@@ -2422,7 +2467,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: GlowButton(
+              child: HealthButton(
                 label: 'False Alert',
                 icon: Icons.close,
                 onPressed: _markFalseAlert,
@@ -2432,7 +2477,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           ],
         ),
         const SizedBox(height: 16),
-        GlowButton(
+        HealthButton(
           label: 'Call Emergency Services',
           icon: Icons.phone,
           onPressed: _callEmergencyServices,
@@ -2582,7 +2627,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildCaregiverCard(String title, Map<String, String> caregiver, {required bool isPrimary}) {
-    return GlassCard(
+    return HealthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2663,7 +2708,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildThemeSettings() {
-    return GlassCard(
+    return HealthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2786,7 +2831,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildNotificationSettings() {
-    return GlassCard(
+    return HealthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2879,7 +2924,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildTestSection() {
-    return GlassCard(
+    return HealthCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2906,7 +2951,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           const SizedBox(height: 20),
-          GlowButton(
+          HealthButton(
             label: 'Send Test Alert',
             icon: Icons.send,
             onPressed: _sendTestAlert,
