@@ -1,2 +1,6 @@
-    pymongo
-    ```
+fastapi
+uvicorn
+pymongo
+pydantic
+twilio
+python-multipart  # for file uploads if needed
