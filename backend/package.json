@@ -1,0 +1,22 @@
+{
+  "name": "guardian-angel-calling-service",
+  "version": "1.0.0",
+  "description": "Twilio calling microservice for Guardian Angel fall detection",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "twilio": "^5.3.5",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  },
+  "keywords": ["twilio", "emergency", "calling", "healthcare", "ugahacks"],
+  "author": "Guardian Angel Team",
+  "license": "MIT"
+}
