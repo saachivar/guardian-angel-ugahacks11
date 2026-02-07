@@ -1,0 +1,6 @@
+gradio>=3.50.0
+mediapipe>=0.10.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+tflite-runtime>=2.14.0; platform_machine != "x86_64"
+tensorflow>=2.14.0; platform_machine == "x86_64"
