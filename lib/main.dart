@@ -1,45 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
-import 'dart:math' as math;
 import 'dart:async';
 
 void main() {
   runApp(const GuardianAngelApp());
 }
 
-class GuardianAngelApp extends StatelessWidget {
+class GuardianAngelApp extends StatefulWidget {
   const GuardianAngelApp({super.key});
 
   @override
+  State<GuardianAngelApp> createState() => _GuardianAngelAppState();
+}
+
+class _GuardianAngelAppState extends State<GuardianAngelApp> {
+  final ThemeManager _themeManager = ThemeManager();
+
+  @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Guardian Angel - Caregiver Dashboard',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: const ColorScheme.dark(
-          primary: GuardianColors.lightGreen,
-          secondary: GuardianColors.lightBlue,
-          surface: GuardianColors.cardBg,
-          background: GuardianColors.darkBg,
-        ),
-        useMaterial3: true,
-        fontFamily: 'SF Pro Display',
-        pageTransitionsTheme: const PageTransitionsTheme(
-          builders: {
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-          },
-        ),
-      ),
-      home: const MainAppWrapper(),
+    return ListenableBuilder(
+      listenable: _themeManager,
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'Guardian Angel - Healthcare Monitoring',
+          debugShowCheckedModeBanner: false,
+          theme: _themeManager.lightTheme,
+          darkTheme: _themeManager.darkTheme,
+          themeMode: _themeManager.themeMode == AppThemeMode.system
+              ? ThemeMode.system
+              : _themeManager.themeMode == AppThemeMode.light
+                  ? ThemeMode.light
+                  : ThemeMode.dark,
+          home: MainAppWrapper(themeManager: _themeManager),
+        );
+      },
     );
   }
 }
 
 // Main app wrapper with navigation
 class MainAppWrapper extends StatefulWidget {
-  const MainAppWrapper({super.key});
+  final ThemeManager themeManager;
+  
+  const MainAppWrapper({super.key, required this.themeManager});
 
   @override
   State<MainAppWrapper> createState() => _MainAppWrapperState();
@@ -49,17 +53,19 @@ class _MainAppWrapperState extends State<MainAppWrapper> {
   int _currentIndex = 0;
   late PageController _pageController;
 
-  final List<Widget> _screens = [
-    const ConnectScreen(),
-    const LiveAlertsHome(),
-    const ProfileScreen(),
-  ];
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: 1); // Start on Live Alerts
     _currentIndex = 1;
+    
+    _screens = [
+      const ConnectScreen(),
+      const LiveAlertsHome(),
+      ProfileScreen(themeManager: widget.themeManager),
+    ];
   }
 
   @override
@@ -168,20 +174,98 @@ class _MainAppWrapperState extends State<MainAppWrapper> {
   }
 }
 
-// Premium Design System
+// Professional Healthcare Design System
+class HealthColors {
+  // Light Theme - Professional Medical Blue
+  static const lightPrimary = Color(0xFF2E7D8F); // Medical Blue
+  static const lightSecondary = Color(0xFF4A9EAF); // Lighter Medical Blue
+  static const lightAccent = Color(0xFF0056B3); // Deep Trust Blue
+  static const lightBackground = Color(0xFFF8FAFB); // Clean White
+  static const lightSurface = Color(0xFFFFFFFF); // Pure White
+  static const lightCardBg = Color(0xFFFFFFFF); // White Cards
+  static const lightTextPrimary = Color(0xFF1A1A1A); // Dark Text
+  static const lightTextSecondary = Color(0xFF6B7280); // Gray Text
+  static const lightBorder = Color(0xFFE5E7EB); // Light Gray Border
+  
+  // Dark Theme - Professional Medical Dark
+  static const darkPrimary = Color(0xFF4A9EAF); // Bright Medical Blue
+  static const darkSecondary = Color(0xFF6BB6C7); // Lighter Blue
+  static const darkAccent = Color(0xFF3B82F6); // Bright Blue
+  static const darkBackground = Color(0xFF0F1419); // Deep Dark
+  static const darkSurface = Color(0xFF1F2937); // Dark Gray
+  static const darkCardBg = Color(0xFF374151); // Card Dark Gray
+  static const darkTextPrimary = Color(0xFFFFFFFF); // White Text
+  static const darkTextSecondary = Color(0xFF9CA3AF); // Light Gray Text
+  static const darkBorder = Color(0xFF4B5563); // Dark Border
+  
+  // Universal Status Colors
+  static const emergencyRed = Color(0xFFDC2626); // Medical Emergency
+  static const warningAmber = Color(0xFFF59E0B); // Medical Warning
+  static const safeGreen = Color(0xFF059669); // Medical Safe
+  static const criticalOrange = Color(0xFFEA580C); // Critical Alert
+}
+
+// Theme Management
+enum AppThemeMode { light, dark, system }
+
+class ThemeManager extends ChangeNotifier {
+  static final ThemeManager _instance = ThemeManager._internal();
+  factory ThemeManager() => _instance;
+  ThemeManager._internal();
+
+  AppThemeMode _themeMode = AppThemeMode.system;
+  AppThemeMode get themeMode => _themeMode;
+
+  void setThemeMode(AppThemeMode mode) {
+    _themeMode = mode;
+    notifyListeners();
+  }
+
+  ThemeData get lightTheme => ThemeData(
+    useMaterial3: true,
+    colorScheme: const ColorScheme.light(
+      primary: HealthColors.lightPrimary,
+      secondary: HealthColors.lightSecondary,
+      tertiary: HealthColors.lightAccent,
+      surface: HealthColors.lightSurface,
+      background: HealthColors.lightBackground,
+      error: HealthColors.emergencyRed,
+    ),
+    scaffoldBackgroundColor: HealthColors.lightBackground,
+    cardColor: HealthColors.lightCardBg,
+    fontFamily: 'SF Pro Display',
+  );
+
+  ThemeData get darkTheme => ThemeData(
+    useMaterial3: true,
+    colorScheme: const ColorScheme.dark(
+      primary: HealthColors.darkPrimary,
+      secondary: HealthColors.darkSecondary,
+      tertiary: HealthColors.darkAccent,
+      surface: HealthColors.darkSurface,
+      background: HealthColors.darkBackground,
+      error: HealthColors.emergencyRed,
+    ),
+    scaffoldBackgroundColor: HealthColors.darkBackground,
+    cardColor: HealthColors.darkCardBg,
+    fontFamily: 'SF Pro Display',
+  );
+}
+
+// Legacy GuardianColors for backward compatibility (will be replaced gradually)
 class GuardianColors {
-  static const lightGreen = Color(0xFF4FFFB8);
-  static const lightBlue = Color(0xFF4FC3F7);
-  static const darkBg = Color(0xFF0A0E27);
-  static const cardBg = Color(0xFF1A1D3A);
-  static const glowGreen = Color(0xFF00FF88);
-  static const glowBlue = Color(0xFF00D4FF);
-  static const emergencyRed = Color(0xFFFF4757);
-  static const warningAmber = Color(0xFFFFB347);
-  static const safeGreen = Color(0xFF2ED573);
-  static const textPrimary = Color(0xFFFFFFFF);
-  static const textSecondary = Color(0xFFB0B7C3);
-  static const glassBorder = Color(0xFF2A2F54);
+  static const lightGreen = HealthColors.lightPrimary;
+  static const lightBlue = HealthColors.lightSecondary;
+  static const darkBg = HealthColors.darkBackground;
+  static const cardBg = HealthColors.darkCardBg;
+  static const glowGreen = HealthColors.lightPrimary;
+  static const glowBlue = HealthColors.lightSecondary;
+  static const emergencyRed = HealthColors.emergencyRed;
+  static const warningAmber = HealthColors.warningAmber;
+  static const safeGreen = HealthColors.safeGreen;
+  static const textPrimary = HealthColors.darkTextPrimary;
+  static const textSecondary = HealthColors.darkTextSecondary;
+  static const glassBorder = HealthColors.darkBorder;
 }
 
 // Premium UI Components
@@ -2425,7 +2509,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
 // Screen 4: Profile/Caregivers (Enterprise look)
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  final ThemeManager? themeManager;
+  
+  const ProfileScreen({super.key, this.themeManager});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -2482,6 +2568,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               isPrimary: false,
             ),
             const SizedBox(height: 32),
+            if (widget.themeManager != null) ...[
+              _buildThemeSettings(),
+              const SizedBox(height: 32),
+            ],
             _buildNotificationSettings(),
             const SizedBox(height: 32),
             _buildTestSection(),
@@ -2568,6 +2658,129 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildThemeSettings() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.palette, color: HealthColors.lightPrimary),
+              const SizedBox(width: 12),
+              const Text(
+                'Theme Settings',
+                style: TextStyle(
+                  color: GuardianColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Choose your preferred theme mode',
+            style: TextStyle(
+              color: GuardianColors.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildThemeOption(
+            'Light Mode',
+            'Clean and bright interface',
+            Icons.light_mode,
+            AppThemeMode.light,
+          ),
+          const SizedBox(height: 12),
+          _buildThemeOption(
+            'Dark Mode',
+            'Easy on the eyes in low light',
+            Icons.dark_mode,
+            AppThemeMode.dark,
+          ),
+          const SizedBox(height: 12),
+          _buildThemeOption(
+            'System Default',
+            'Follows your device settings',
+            Icons.settings_suggest,
+            AppThemeMode.system,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeOption(String title, String subtitle, IconData icon, AppThemeMode mode) {
+    final isSelected = widget.themeManager?.themeMode == mode;
+    
+    return GestureDetector(
+      onTap: () {
+        widget.themeManager?.setThemeMode(mode);
+        HapticFeedback.lightImpact();
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? HealthColors.lightPrimary.withOpacity(0.1)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected 
+                ? HealthColors.lightPrimary
+                : GuardianColors.glassBorder,
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected 
+                  ? HealthColors.lightPrimary
+                  : GuardianColors.textSecondary,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: isSelected 
+                          ? HealthColors.lightPrimary
+                          : GuardianColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: GuardianColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              Icon(
+                Icons.check_circle,
+                color: HealthColors.lightPrimary,
+                size: 20,
+              ),
+          ],
+        ),
       ),
     );
   }
