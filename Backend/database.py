@@ -9,6 +9,6 @@ db = client["my_database"]
 collection = db["users"]
 
 # Insert a document (this triggers database creation)
-collection.insert_one({"name": "Aasdfadsfe", "age": 25})
+collection.insert_one({"name": "Alice", "age": 25})
 
 print("Inserted document! Database should now exist in MongoDB Atlas.")
