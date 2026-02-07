@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math' as math;
 import 'dart:async';
 
@@ -947,7 +948,7 @@ class _ConnectScreenState extends State<ConnectScreen>
                                   const SizedBox(width: 8),
                                   const Expanded(
                                     child: Text(
-                                      'Connected to: Home Guardian System\nPatient: Eleanor Johnson',
+                                      'Connected to: Home Guardian System\nPatient: Anisha Dhawan',
                                       style: TextStyle(
                                         color: GuardianColors.textPrimary,
                                         fontSize: 12,
@@ -1200,7 +1201,8 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
   
   // Mock data - pre-connected for POC
   bool _hasActiveAlert = true;  // Start with an active alert to show functionality
-  String _patientName = 'Eleanor Johnson';
+  String _patientName = 'Anisha Dhawan';
+  String _patientPhone = '+1 (678) 472-3672';
   String _liveStatus = 'Fall Detected';
   String _systemStatus = 'Connected - Home Guardian System';
   int _camerasOnline = 4;
@@ -1890,7 +1892,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
             const SizedBox(height: 12),
             
             HealthButton(
-              label: 'Call Eleanor',
+              label: 'Call Anisha',
               icon: Icons.person,
               onPressed: () {
                 Navigator.pop(context);
@@ -1941,14 +1943,39 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
     );
   }
 
-  void _simulatePatientCall() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📞 Calling Eleanor Johnson...'),
-        backgroundColor: GuardianColors.lightBlue,
-        behavior: SnackBarBehavior.floating,
-      ),
+  Future<void> _makePhoneCall(String phoneNumber, String personName) async {
+    // Remove any formatting from phone number for the tel: scheme
+    final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final Uri phoneLaunchUri = Uri(
+      scheme: 'tel',
+      path: cleanNumber,
     );
+    
+    try {
+      if (await canLaunchUrl(phoneLaunchUri)) {
+        await launchUrl(phoneLaunchUri);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not launch phone call to $personName'),
+            backgroundColor: HealthColors.emergencyRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error calling $personName: $e'),
+          backgroundColor: HealthColors.emergencyRed,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _simulatePatientCall() {
+    _makePhoneCall(_patientPhone, _patientName);
   }
 }
 
@@ -2603,13 +2630,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _notifySecondary = true;
   
   final Map<String, String> _primaryCaregiver = {
-    'name': 'Sarah Johnson (Mom)',
-    'phone': '+1 (555) 234-5678',
+    'name': 'Stuti Thummala',
+    'phone': '+1 (470) 807-3876',
   };
   
   final Map<String, String> _secondaryCaregiver = {
-    'name': 'Michael Thompson (Aunt)',
-    'phone': '+1 (555) 876-5432',
+    'name': 'Saachi Varshney',
+    'phone': '+1 (470) 553-6461',
   };
 
   @override
@@ -2733,6 +2760,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                HealthButton(
+                  label: 'Call ${caregiver['name']!.split(' ')[0]}',
+                  icon: Icons.call,
+                  onPressed: () => _makePhoneCall(caregiver['phone']!, caregiver['name']!),
+                  isPrimary: false,
                 ),
               ],
             ),
@@ -3059,5 +3093,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber, String personName) async {
+    // Remove any formatting from phone number for the tel: scheme
+    final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final Uri phoneLaunchUri = Uri(
+      scheme: 'tel',
+      path: cleanNumber,
+    );
+    
+    try {
+      if (await canLaunchUrl(phoneLaunchUri)) {
+        await launchUrl(phoneLaunchUri);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not launch phone call to $personName'),
+            backgroundColor: HealthColors.emergencyRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error calling $personName: $e'),
+          backgroundColor: HealthColors.emergencyRed,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }
