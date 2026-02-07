@@ -1,0 +1,8 @@
+mediapipe>=0.10.0
+opencv-python>=4.8.0
+numpy>=1.24.0
+gradio>=3.50.0
+
+# TensorFlow Lite (choose one based on platform)
+# tflite-runtime>=2.14.0  # For ARM devices (Raspberry Pi)
+# tensorflow>=2.14.0      # For x86_64 systems
