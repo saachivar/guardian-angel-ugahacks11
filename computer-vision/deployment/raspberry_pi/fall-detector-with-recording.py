@@ -97,6 +97,7 @@ PRE_FALL_SECONDS = 5   # Record 5 seconds before fall
 POST_FALL_SECONDS = 10  # Record 10 seconds after fall
 RECORDING_OUTPUT_DIR = "fall_recordings"  # Directory to save recordings
 VIDEO_CODEC = 'mp4v'  # or 'XVID' for .avi
+SAVE_VIDEO_FPS = 30  # Fixed FPS to save videos at to avoid slow-motion playback
 
 # Create recordings directory if it doesn't exist
 if ENABLE_RECORDING and not os.path.exists(RECORDING_OUTPUT_DIR):
@@ -247,102 +248,86 @@ def listen_for_response():
         return None
     
     try:
-        # Wait longer for audio device to be fully released from TTS
+        # Wait a short period to allow audio device release after TTS
         log_message("🎤 Preparing microphone (waiting for audio device)...")
-        time.sleep(2.5)  # Increased delay to ensure audio device is free
-        
+        time.sleep(2.5)
+
+        if not STT_AVAILABLE or recognizer is None:
+            log_message("⚠️  Speech-to-text not available (recognizer not initialized)")
+            return "ERROR"
+
         log_message("🎤 Listening for voice response...")
         print("\n" + "="*60, flush=True)
         print("  🎤 MICROPHONE ACTIVATED - PLEASE SPEAK NOW!", flush=True)
         print("="*60 + "\n", flush=True)
-        
-        # Try to initialize microphone with retries
-        mic_initialized = False
-        for attempt in range(3):
-            try:
-                # Use device_index=0 to explicitly select MacBook Pro Microphone
-                with sr.Microphone(device_index=0) as source:
-                    mic_initialized = True
-                    # Lower energy threshold for better sensitivity
-                    recognizer.energy_threshold = 300  # Lower = more sensitive (default ~4000)
-                    recognizer.dynamic_energy_threshold = False
-                    
-                    # Adjust for ambient noise with shorter duration
-                    log_message("🎤 Adjusting for ambient noise (1 second)...")
-                    print("🔊 Calibrating microphone...\n", flush=True)
+
+        # Try to explicitly instantiate the microphone object before entering context
+        mic = None
+        try:
+            mic = sr.Microphone(device_index=0)
+        except Exception as e:
+            log_message(f"❌ Failed to create Microphone object: {e}")
+            return "ERROR"
+
+        # Try to enter microphone context and listen
+        try:
+            with mic as source:
+                # Fine-tune recognizer sensitivity
+                recognizer.energy_threshold = 300
+                recognizer.dynamic_energy_threshold = False
+
+                log_message("🎤 Adjusting for ambient noise (1 second)...")
+                print("🔊 Calibrating microphone...\n", flush=True)
+                try:
                     recognizer.adjust_for_ambient_noise(source, duration=1.0)
-                    
-                    log_message(f"🎤 READY! Speak now - listening for up to {VOICE_LISTEN_TIMEOUT} seconds...")
-                    print("" + "*"*60, flush=True)
-                    print("  *** SPEAK NOW - SYSTEM IS LISTENING ***", flush=True)
-                    print("" + "*"*60 + "\n", flush=True)
-                    
-                    # Listen for speech with increased timeout
-                    try:
-                        audio = recognizer.listen(
-                            source,
-                            timeout=VOICE_LISTEN_TIMEOUT,
-                            phrase_time_limit=VOICE_PHRASE_TIME_LIMIT
-                        )
-                    except KeyboardInterrupt:
-                        log_message("⚠️  Listening interrupted by user")
-                        return "INTERRUPTED"
-                    
-                    log_message("🎤 Audio captured! Processing with Google Speech Recognition...")
-                    print("\n🔄 Processing your response (this may take a few seconds)...\n", flush=True)
-                    
-                    # Recognize speech using Google Speech Recognition
+                except Exception as e:
+                    log_message(f"⚠️  adjust_for_ambient_noise failed: {e}")
+
+                log_message(f"🎤 READY! Listening for up to {VOICE_LISTEN_TIMEOUT}s...")
+                print("" + "*"*60, flush=True)
+                print("  *** SPEAK NOW - SYSTEM IS LISTENING ***", flush=True)
+                print("" + "*"*60 + "\n", flush=True)
+
+                try:
+                    audio = recognizer.listen(
+                        source,
+                        timeout=VOICE_LISTEN_TIMEOUT,
+                        phrase_time_limit=VOICE_PHRASE_TIME_LIMIT
+                    )
+                except sr.WaitTimeoutError:
+                    log_message("⏱️  No response heard (timeout - no speech detected)")
+                    return "NO_RESPONSE"
+                except KeyboardInterrupt:
+                    log_message("⚠️  Listening interrupted by user")
+                    return "INTERRUPTED"
+
+                log_message("🎤 Audio captured! Processing...")
+                print("\n🔄 Processing your response (this may take a few seconds)...\n", flush=True)
+
+                try:
                     text = recognizer.recognize_google(audio)
                     log_message(f"🗣️  Heard: '{text}'")
                     print("\n" + "="*60, flush=True)
                     print(f"  ✅ YOU SAID: '{text}'", flush=True)
                     print("="*60 + "\n", flush=True)
                     return text
-                    
-            except (OSError, AttributeError) as mic_error:
-                if attempt < 2:
-                    log_message(f"⚠️  Microphone init attempt {attempt+1} failed, retrying...")
-                    time.sleep(1.0)
-                else:
-                    raise mic_error
-        
-        if not mic_initialized:
-            log_message("❌ Failed to initialize microphone after 3 attempts")
+                except sr.UnknownValueError:
+                    log_message("⚠️  Could not understand audio (speech unclear)")
+                    return "UNCLEAR"
+                except sr.RequestError as e:
+                    log_message(f"❌ Speech recognition request failed: {e}")
+                    return "ERROR"
+
+        except Exception as e:
+            log_message(f"❌ Microphone context/listen error: {e}")
             return "ERROR"
-            
-    except sr.WaitTimeoutError:
-        log_message("⏱️  No response heard (timeout - no speech detected)")
-        print("\n⏱️  No speech detected within timeout period\n", flush=True)
-        return "NO_RESPONSE"
-    except sr.UnknownValueError:
-        log_message("⚠️  Could not understand audio (speech was unclear or too quiet)")
-        print("\n⚠️  Speech detected but could not understand - please speak louder and clearer\n", flush=True)
-        return "UNCLEAR"
-    except sr.RequestError as e:
-        log_message(f"❌ Speech recognition error: {e}")
-        print(f"\n❌ Speech recognition service error: {e}\n", flush=True)
-        return "ERROR"
-    except OSError as e:
-        log_message(f"❌ Microphone error (permission denied?): {e}")
-        print(f"\n❌ Microphone not accessible - check System Settings > Privacy > Microphone\n", flush=True)
-        return "ERROR"
-    except AttributeError as e:
-        log_message(f"❌ Microphone initialization error: {e}")
-        print(f"\n❌ Audio device error - microphone may be in use by another app\n", flush=True)
-        return "ERROR"
+
     except KeyboardInterrupt:
-        raise  # Re-raise to allow clean shutdown
+        raise
     except Exception as e:
         log_message(f"❌ Unexpected error during listening: {e}")
         import traceback
         log_message(f"Traceback: {traceback.format_exc()}")
-        print(f"\n❌ Unexpected error: {e}\n", flush=True)
-        return "ERROR"
-    except Exception as e:
-        log_message(f"❌ Unexpected error during listening: {e}")
-        import traceback
-        log_message(f"Traceback: {traceback.format_exc()}")
-        print(f"\n❌ Error: {e}\n", flush=True)
         return "ERROR"
 
 def get_kpt_indices_training_order(keypoint_name):
@@ -460,7 +445,9 @@ def start_recording(fps):
     
     # Initialize video writer
     fourcc = cv2.VideoWriter_fourcc(*VIDEO_CODEC)
-    video_writer = cv2.VideoWriter(filename, fourcc, fps, (FRAME_WIDTH, FRAME_HEIGHT))
+    # Use fixed save frame rate to avoid slow-motion clips when processing reduces runtime FPS
+    save_fps = int(SAVE_VIDEO_FPS)
+    video_writer = cv2.VideoWriter(filename, fourcc, save_fps, (FRAME_WIDTH, FRAME_HEIGHT))
     
     if not video_writer.isOpened():
         log_message(f"❌ ERROR: Could not open video writer for {filename}")
@@ -469,9 +456,10 @@ def start_recording(fps):
     recording_state['is_recording'] = True
     recording_state['video_writer'] = video_writer
     recording_state['filename'] = filename
-    recording_state['post_fall_frames_remaining'] = int(POST_FALL_SECONDS * fps)
+    # post_fall_frames_remaining is based on save FPS to match final clip duration
+    recording_state['post_fall_frames_remaining'] = int(POST_FALL_SECONDS * save_fps)
     
-    log_message(f"📹 RECORDING STARTED: {filename} (will record {POST_FALL_SECONDS}s post-fall)")
+    log_message(f"📹 RECORDING STARTED: {filename} (will record {POST_FALL_SECONDS}s post-fall at {save_fps} FPS)")
     return True
 
 def write_buffered_frames():
@@ -802,9 +790,9 @@ def process_frame(frame, pose_landmarker, frame_count, fps):
                (processed_frame_display.shape[1] - 200, 70),
                cv2.FONT_HERSHEY_SIMPLEX, 0.6, skeleton_color, 2, cv2.LINE_AA)
     
-    # Write frame if recording
+    # Write raw (unannotated) frame if recording so backend receives original footage
     if recording_state['is_recording']:
-        write_frame(processed_frame_display)
+        write_frame(frame)
     
     return processed_frame_display
 

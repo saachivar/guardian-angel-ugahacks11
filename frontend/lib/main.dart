@@ -235,6 +235,26 @@ class ThemeManager extends ChangeNotifier {
     scaffoldBackgroundColor: HealthColors.lightBackground,
     cardColor: HealthColors.lightCardBg,
     fontFamily: 'SF Pro Display',
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.all(GuardianColors.cardBg),
+        foregroundColor: MaterialStateProperty.all(GuardianColors.textPrimary),
+        shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+        shadowColor: MaterialStateProperty.all(Colors.transparent),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: MaterialStateProperty.all(GuardianColors.lightBlue),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        side: MaterialStateProperty.all(BorderSide(color: GuardianColors.lightBlue, width: 2)),
+        backgroundColor: MaterialStateProperty.all(GuardianColors.cardBg),
+        shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+      ),
+    ),
   );
 
   ThemeData get darkTheme => ThemeData(
@@ -250,6 +270,26 @@ class ThemeManager extends ChangeNotifier {
     scaffoldBackgroundColor: HealthColors.darkBackground,
     cardColor: HealthColors.darkCardBg,
     fontFamily: 'SF Pro Display',
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: MaterialStateProperty.all(GuardianColors.cardBg),
+        foregroundColor: MaterialStateProperty.all(GuardianColors.textPrimary),
+        shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+        shadowColor: MaterialStateProperty.all(Colors.transparent),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: MaterialStateProperty.all(GuardianColors.lightBlue),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        side: MaterialStateProperty.all(BorderSide(color: GuardianColors.lightBlue, width: 2)),
+        backgroundColor: MaterialStateProperty.all(GuardianColors.cardBg),
+        shape: MaterialStateProperty.all(RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+      ),
+    ),
   );
 }
 
@@ -290,24 +330,23 @@ class _HealthButtonState extends State<HealthButton> {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
         decoration: BoxDecoration(
-          color: widget.isPrimary
-              ? (isDark ? HealthColors.darkPrimary : HealthColors.lightPrimary)
-              : (isDark ? HealthColors.darkCardBg : HealthColors.lightCardBg),
-          borderRadius: BorderRadius.circular(12),
+          color: GuardianColors.cardBg,
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: widget.isPrimary
-                ? Colors.transparent
-                : (isDark ? HealthColors.darkBorder : HealthColors.lightBorder),
-            width: 1,
+            color: GuardianColors.lightBlue.withOpacity(0.95),
+            width: 2,
           ),
           boxShadow: [
             BoxShadow(
-              color: (widget.isPrimary 
-                  ? (isDark ? HealthColors.darkPrimary : HealthColors.lightPrimary)
-                  : Colors.black)
-                .withOpacity(_isPressed ? 0.3 : 0.1),
-              blurRadius: _isPressed ? 8 : 4,
-              offset: Offset(0, _isPressed ? 2 : 1),
+              color: GuardianColors.lightBlue.withOpacity(_isPressed ? 0.14 : 0.22),
+              blurRadius: _isPressed ? 10 : 18,
+              spreadRadius: _isPressed ? 0 : 1,
+              offset: const Offset(0, 2),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.45),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -317,11 +356,7 @@ class _HealthButtonState extends State<HealthButton> {
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    widget.isPrimary 
-                        ? Colors.white 
-                        : (isDark ? HealthColors.darkPrimary : HealthColors.lightPrimary),
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(GuardianColors.lightBlue),
                 ),
               )
             : Row(
@@ -343,9 +378,7 @@ class _HealthButtonState extends State<HealthButton> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
-                        color: widget.isPrimary 
-                            ? Colors.white 
-                            : (isDark ? HealthColors.darkTextPrimary : HealthColors.lightTextPrimary),
+                        color: Colors.white,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -376,17 +409,30 @@ class HealthCard extends StatelessWidget {
     return Container(
       padding: padding ?? const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: backgroundColor ?? (isDark ? HealthColors.darkCardBg : HealthColors.lightCardBg),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            (backgroundColor ?? (isDark ? HealthColors.darkCardBg : HealthColors.lightCardBg)).withOpacity(0.4),
+            (backgroundColor ?? (isDark ? HealthColors.darkCardBg : HealthColors.lightCardBg)).withOpacity(0.6),
+            (backgroundColor ?? (isDark ? HealthColors.darkCardBg : HealthColors.lightCardBg)).withOpacity(0.4),
+          ],
+        ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDark ? HealthColors.darkBorder : HealthColors.lightBorder,
+          color: (isDark ? HealthColors.darkBorder : HealthColors.lightBorder).withOpacity(0.6),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: Colors.white.withOpacity(isDark ? 0.03 : 0.1),
+            offset: const Offset(-2, -2),
+            blurRadius: 6,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.05),
+            offset: const Offset(2, 2),
+            blurRadius: 8,
           ),
         ],
       ),
@@ -2121,12 +2167,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
       'contactArea': 1350.0 + random.nextDouble() * 200.0, // 1350-1550 cm²
       'recoveryTime': random.nextDouble() < 0.3 ? (random.nextDouble() * 2.0) : 0.0, // 0s or 0-2s
       'bodyMassIndex': 23.0 + random.nextDouble() * 4.0, // 23-27 kg/m²
-      'age': 68 + random.nextInt(10), // 68-77 years
-      'boneStrength': 62.0 + random.nextDouble() * 12.0, // 62-74%
-      'muscleResponse': 10.0 + random.nextDouble() * 8.0, // 10-18 ms
+      // 'age' removed: Patient age no longer used in impact model
       'headImpact': random.nextBool(),
       'spineAlignment': ['normal', 'compromised', 'compromised', 'severe'][random.nextInt(4)],
-      'impactSurface': ['hard floor', 'hard floor', 'carpet', 'concrete'][random.nextInt(4)],
+      'impactSurface': 'Carpet Tile (Modular Carpet)',
     };
   }
 
@@ -2750,11 +2794,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     // Recovery time - no recovery is critical (0-20 points)
     risk += _impactData['recoveryTime'] == 0.0 ? 20 : math.max(0, 20 - _impactData['recoveryTime'] * 4);
     
-    // Age factor (0-15 points)
-    risk += math.min(15, math.max(0, (_impactData['age'] - 50) * 0.5));
-    
-    // Bone strength (0-15 points)
-    risk += math.min(15, (100 - _impactData['boneStrength']) * 0.15);
+    // Age factor removed (Patient Age not used)
     
     // Surface hardness (0-10 points)
     if (_impactData['impactSurface'] == 'concrete') {
@@ -2783,10 +2823,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Color _getRiskColor(double risk) {
-    // Use theme colors instead of orange/red gradients
-    if (risk >= 80) return GuardianColors.emergencyRed;
-    if (risk >= 60) return const Color(0xFF4A9EFF); // Bright blue
-    if (risk >= 40) return GuardianColors.lightBlue;
+    // Use theme colors - no red, consistent blues
+    if (risk >= 80) return const Color(0xFF4A9EFF); // Bright blue
+    if (risk >= 60) return GuardianColors.lightBlue;
+    if (risk >= 40) return const Color(0xFF6DB4FF); // Light blue
     return GuardianColors.safeGreen;
   }
 
@@ -2800,28 +2840,28 @@ class _EventDetailScreenState extends State<EventDetailScreen>
         'Immediate EMS dispatch recommended. High probability of hip fracture or head trauma. Patient shows no recovery movement.',
         'CRITICAL: Call 911 immediately. Impact force (847N) and lack of recovery suggest severe injury. Do not move patient.',
         'Emergency transport required. Fall dynamics indicate potential spinal injury. Immobilization protocols necessary.',
-        'Urgent medical attention needed. Impact velocity and patient age correlate with 78% hip fracture risk.',
-        'PRIORITY 1: Activate emergency services. Hard floor impact at this velocity typically requires surgical intervention.',
+        'Urgent medical attention needed. Impact velocity correlates with a high hip fracture risk.',
+        'PRIORITY 1: Activate emergency services. Impact at this velocity typically requires surgical intervention.',
       ];
     } else if (risk >= 60) {
       suggestions = [
         'Medical evaluation strongly recommended within 1 hour. Impact force suggests possible fracture or internal injury.',
-        'HIGH RISK: Contact physician immediately. Monitor for delayed symptoms including confusion, numbness, or severe pain.',
+        'HIGH RISK: Seek urgent clinical assessment. Monitor for delayed symptoms including confusion, numbness, or severe pain.',
         'Urgent care visit advised. Fall characteristics indicate 62% chance of requiring medical intervention.',
         'Medical imaging recommended. Impact angle and force suggest potential bone or soft tissue damage.',
-        'Doctor consultation needed today. Patient vitals and fall metrics warrant professional assessment.',
+        'Arrange clinical assessment today; vitals and fall metrics warrant further evaluation.',
       ];
     } else if (risk >= 40) {
       suggestions = [
-        'Medical check-up recommended within 24 hours. Monitor patient for pain, swelling, or mobility issues.',
-        'MODERATE RISK: Schedule physician visit. Watch for delayed symptoms over next 48 hours.',
-        'Telemedicine consultation advised. Fall parameters suggest professional evaluation would be prudent.',
-        'Contact primary care provider. Impact data indicates possible minor injury requiring assessment.',
-        'Medical follow-up recommended. Monitor patient closely and seek care if symptoms develop.',
+        'Medical check-up recommended within 24 hours. Monitor for pain, swelling, or mobility issues.',
+        'MODERATE RISK: Schedule a clinical check-up. Watch for delayed symptoms over next 48 hours.',
+        'Remote clinical assessment may be beneficial. Monitor for symptoms and follow-up if needed.',
+        'Consider scheduling a clinical check-up if symptoms persist. Impact data indicates possible minor injury requiring assessment.',
+        'Medical follow-up recommended. Monitor closely and seek care if symptoms develop.',
       ];
     } else {
       suggestions = [
-        'LOW RISK: Monitor patient for 24 hours. Contact doctor if pain or discomfort develops.',
+        'LOW RISK: Monitor for 24 hours and seek care if pain or discomfort develops.',
         'Observation recommended. Fall metrics suggest low injury probability, but remain vigilant.',
         'Continue monitoring. Impact characteristics indicate minimal risk, but watch for any changes.',
         'Patient assessment shows favorable indicators. Maintain standard care protocols and monitor.',
@@ -2840,7 +2880,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     return Container(
       decoration: BoxDecoration(
         color: GuardianColors.cardBg,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: GuardianColors.glassBorder,
         ),
@@ -2855,7 +2895,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: GuardianColors.lightBlue.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                   border: Border.all(
                     color: GuardianColors.lightBlue.withOpacity(0.3),
                   ),
@@ -2895,8 +2935,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: GuardianColors.darkBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: GuardianColors.glassBorder),
+              border: Border.all(
+                color: GuardianColors.glassBorder,
+              ),
             ),
             child: Row(
               children: [
@@ -3011,52 +3052,36 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             children: [
               _buildRiskFactor(
                 'Impact Velocity',
-                '${_impactData['impactVelocity']} m/s',
+                '${_impactData['impactVelocity'].toStringAsFixed(2)} m/s',
                 Icons.speed,
                 riskColor,
               ),
               _buildRiskFactor(
                 'Impact Force',
-                '${_impactData['impactForce']} N',
+                '${_impactData['impactForce'].toStringAsFixed(1)} N',
                 Icons.flash_on,
                 riskColor,
               ),
               _buildRiskFactor(
                 'Impact Angle',
-                '${_impactData['impactAngle']}°',
+                '${_impactData['impactAngle'].toStringAsFixed(1)}°',
                 Icons.rotate_90_degrees_ccw,
                 riskColor,
               ),
               _buildRiskFactor(
                 'Contact Area',
-                '${_impactData['contactArea']} cm²',
+                '${_impactData['contactArea'].toStringAsFixed(0)} cm²',
                 Icons.crop_square,
                 riskColor,
               ),
               _buildRiskFactor(
                 'Recovery Time',
-                '${_impactData['recoveryTime']} sec',
+                '${_impactData['recoveryTime'].toStringAsFixed(1)} sec',
                 Icons.timer,
-                GuardianColors.emergencyRed,
+                GuardianColors.lightBlue,
               ),
-              _buildRiskFactor(
-                'Patient Age',
-                '${_impactData['age']} years',
-                Icons.person,
-                riskColor,
-              ),
-              _buildRiskFactor(
-                'Bone Strength',
-                '${_impactData['boneStrength']}%',
-                Icons.accessibility,
-                riskColor,
-              ),
-              _buildRiskFactor(
-                'Muscle Response',
-                '${_impactData['muscleResponse']} ms',
-                Icons.fitness_center,
-                GuardianColors.warningAmber,
-              ),
+              // Patient Age removed from UI
+              // Bone Strength and Muscle Response removed per UI update
               _buildRiskFactor(
                 'Impact Surface',
                 _impactData['impactSurface'],
@@ -3067,7 +3092,7 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                 'Spine Alignment',
                 _impactData['spineAlignment'],
                 Icons.warning,
-                GuardianColors.warningAmber,
+                GuardianColors.lightBlue,
               ),
             ],
           ),
@@ -3079,15 +3104,30 @@ class _EventDetailScreenState extends State<EventDetailScreen>
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
                 colors: [
-                  GuardianColors.lightBlue.withOpacity(0.1),
-                  GuardianColors.lightGreen.withOpacity(0.1),
+                  GuardianColors.lightBlue.withOpacity(0.08),
+                  GuardianColors.darkBg.withOpacity(0.7),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: GuardianColors.glassBorder,
+                color: GuardianColors.glassBorder.withOpacity(0.5),
+                width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.white.withOpacity(0.03),
+                  offset: const Offset(-2, -2),
+                  blurRadius: 6,
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  offset: const Offset(2, 2),
+                  blurRadius: 8,
+                ),
+              ],
             ),
             child: Row(
               children: [
@@ -3119,11 +3159,31 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: GuardianColors.darkBg,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            GuardianColors.darkBg.withOpacity(0.75),
+            GuardianColors.darkBg.withOpacity(0.85),
+          ],
+        ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: GuardianColors.glassBorder,
+          color: GuardianColors.glassBorder.withOpacity(0.5),
+          width: 1,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withOpacity(0.03),
+            offset: const Offset(-2, -2),
+            blurRadius: 6,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            offset: const Offset(2, 2),
+            blurRadius: 8,
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -3162,11 +3222,32 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: GuardianColors.cardBg,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: GuardianColors.glassBorder,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            GuardianColors.darkBg.withOpacity(0.4),
+            GuardianColors.cardBg.withOpacity(0.6),
+            GuardianColors.darkBg.withOpacity(0.4),
+          ],
         ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: GuardianColors.glassBorder.withOpacity(0.6),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withOpacity(0.05),
+            offset: const Offset(-2, -2),
+            blurRadius: 8,
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            offset: const Offset(2, 2),
+            blurRadius: 8,
+          ),
+        ],
       ),
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -3177,11 +3258,31 @@ class _EventDetailScreenState extends State<EventDetailScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: GuardianColors.lightBlue.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: GuardianColors.lightBlue.withOpacity(0.3),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      GuardianColors.lightBlue.withOpacity(0.2),
+                      GuardianColors.darkBg.withOpacity(0.8),
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: GuardianColors.lightBlue.withOpacity(0.4),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.03),
+                      offset: const Offset(-1, -1),
+                      blurRadius: 4,
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      offset: const Offset(1, 1),
+                      blurRadius: 6,
+                    ),
+                  ],
                 ),
                 child: const Icon(Icons.psychology, color: GuardianColors.lightBlue, size: 28),
               ),
@@ -3218,27 +3319,35 @@ class _EventDetailScreenState extends State<EventDetailScreen>
               width: double.infinity,
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [GuardianColors.lightBlue, GuardianColors.lightGreen],
-                ),
-                borderRadius: BorderRadius.circular(16),
+                color: GuardianColors.cardBg,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: GuardianColors.lightBlue, width: 2),
+                boxShadow: [
+                  BoxShadow(
+                    color: GuardianColors.lightBlue.withOpacity(0.22),
+                    blurRadius: 18,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: ElevatedButton(
                 onPressed: _generateRecommendation,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: GuardianColors.darkBg,
+                  backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
+                    side: BorderSide(color: GuardianColors.lightBlue, width: 2),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.auto_awesome, color: GuardianColors.lightBlue, size: 24),
-                    SizedBox(width: 12),
-                    Text(
+                    const SizedBox(width: 12),
+                    const Text(
                       'Generate Course of Action',
                       style: TextStyle(
                         color: GuardianColors.textPrimary,
@@ -3285,11 +3394,31 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: GuardianColors.darkBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: GuardianColors.glassBorder,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withOpacity(0.05),
+                        GuardianColors.darkBg.withOpacity(0.9),
+                      ],
                     ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: GuardianColors.glassBorder.withOpacity(0.5),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.white.withOpacity(0.03),
+                        offset: const Offset(-2, -2),
+                        blurRadius: 6,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        offset: const Offset(2, 2),
+                        blurRadius: 8,
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
