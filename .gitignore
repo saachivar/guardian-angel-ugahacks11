@@ -51,3 +51,7 @@ __pycache__/
 .env
 *.env
 !.env.example
+
+# Temporary video clips - not needed in git
+receiver-backend/clips/
+computer-vision/latest_clips/
