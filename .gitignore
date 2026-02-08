@@ -44,3 +44,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+__pycache__/
+*.pyc
+
+# Environment variables
+.env
+*.env
+!.env.example

@@ -3,4 +3,5 @@ uvicorn
 pymongo
 pydantic
 twilio
+python-dotenv
 python-multipart  # for file uploads if needed

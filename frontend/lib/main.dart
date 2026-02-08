@@ -17,6 +17,13 @@ class GuardianAngelApp extends StatefulWidget {
 
 class _GuardianAngelAppState extends State<GuardianAngelApp> {
   final ThemeManager _themeManager = ThemeManager();
+  bool _isAuthenticated = false;
+
+  void _onLoginSuccess() {
+    setState(() {
+      _isAuthenticated = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,9 +40,397 @@ class _GuardianAngelAppState extends State<GuardianAngelApp> {
               : _themeManager.themeMode == AppThemeMode.light
                   ? ThemeMode.light
                   : ThemeMode.dark,
-          home: MainAppWrapper(themeManager: _themeManager),
+          home: _isAuthenticated 
+              ? MainAppWrapper(themeManager: _themeManager)
+              : LoginScreen(onLoginSuccess: _onLoginSuccess),
         );
       },
+    );
+  }
+}
+
+// Professional Bank-Style Login Screen
+class LoginScreen extends StatefulWidget {
+  final VoidCallback onLoginSuccess;
+  
+  const LoginScreen({super.key, required this.onLoginSuccess});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isPasswordVisible = false;
+  bool _isLoading = false;
+  String _errorMessage = '';
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
+
+  // Hardcoded credentials
+  static const String _validUsername = 'hairydawg';
+  static const String _validPassword = 'goDawgs!';
+
+  @override
+  void initState() {
+    super.initState();
+    _shakeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _shakeAnimation = Tween<double>(begin: 0, end: 10).animate(
+      CurvedAnimation(
+        parent: _shakeController,
+        curve: Curves.elasticIn,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    _shakeController.dispose();
+    super.dispose();
+  }
+
+  void _handleLogin() async {
+    setState(() {
+      _errorMessage = '';
+      _isLoading = true;
+    });
+
+    // Simulate network delay for authenticity
+    await Future.delayed(const Duration(milliseconds: 800));
+
+    if (_usernameController.text == _validUsername && 
+        _passwordController.text == _validPassword) {
+      // Success
+      HapticFeedback.mediumImpact();
+      widget.onLoginSuccess();
+    } else {
+      // Failure
+      HapticFeedback.heavyImpact();
+      setState(() {
+        _errorMessage = 'Invalid username or password';
+        _isLoading = false;
+      });
+      _shakeController.forward(from: 0);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0A0E21) : const Color(0xFFF5F7FA),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: AnimatedBuilder(
+              animation: _shakeAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(_shakeAnimation.value * math.sin(_shakeController.value * math.pi * 8), 0),
+                  child: child,
+                );
+              },
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Professional Logo Section
+                    Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            const Color(0xFF2E7D8F),
+                            const Color(0xFF4A9EAF),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2E7D8F).withOpacity(0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        size: 50,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    // Professional Title
+                    Text(
+                      'Guardian Angel',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Healthcare Monitoring System',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 48),
+                    
+                    // Secure Access Notice
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D8F).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF2E7D8F).withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.lock_outline,
+                            size: 20,
+                            color: const Color(0xFF2E7D8F),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Secure Login • 256-bit Encryption',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? Colors.white70 : const Color(0xFF374151),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    // Username Field
+                    _buildTextField(
+                      controller: _usernameController,
+                      label: 'Username',
+                      icon: Icons.person_outline,
+                      isDark: isDark,
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Password Field
+                    _buildTextField(
+                      controller: _passwordController,
+                      label: 'Password',
+                      icon: Icons.lock_outline,
+                      isDark: isDark,
+                      isPassword: true,
+                      isPasswordVisible: _isPasswordVisible,
+                      onTogglePassword: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
+                    
+                    // Error Message
+                    if (_errorMessage.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: Colors.red.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                _errorMessage,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    
+                    const SizedBox(height: 32),
+                    
+                    // Login Button
+                    SizedBox(
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleLogin,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2E7D8F),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          disabledBackgroundColor: const Color(0xFF2E7D8F).withOpacity(0.6),
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Security Notice
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.verified_user,
+                          size: 16,
+                          color: isDark ? Colors.white38 : const Color(0xFF9CA3AF),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Protected by biometric authentication',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isDark ? Colors.white38 : const Color(0xFF9CA3AF),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    // Footer
+                    Text(
+                      '© 2026 Guardian Angel Systems\nAll rights reserved',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isDark ? Colors.white24 : const Color(0xFF9CA3AF),
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required bool isDark,
+    bool isPassword = false,
+    bool? isPasswordVisible,
+    VoidCallback? onTogglePassword,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E2139) : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark 
+              ? const Color(0xFF2A2F4F) 
+              : const Color(0xFFE5E7EB),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword && !(isPasswordVisible ?? false),
+        style: TextStyle(
+          color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+          fontSize: 15,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: const Color(0xFF2E7D8F),
+            size: 22,
+          ),
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    isPasswordVisible! ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                    color: isDark ? Colors.white60 : const Color(0xFF6B7280),
+                    size: 22,
+                  ),
+                  onPressed: onTogglePassword,
+                )
+              : null,
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        ),
+        onSubmitted: (_) => _handleLogin(),
+      ),
     );
   }
 }
@@ -1208,6 +1603,28 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
   int _camerasOnline = 4;
   String _lastActivity = 'System active - monitoring';
   
+  // Recent events list
+  List<Map<String, String>> recentEvents = [
+    {
+      'type': 'resolved',
+      'title': 'False Alert - Kitchen',
+      'time': 'Yesterday 11:30 AM',
+      'description': 'Motion detected, cat knocked over item',
+    },
+    {
+      'type': 'resolved',
+      'title': 'Daily Check Complete',
+      'time': 'Yesterday 9:00 AM',
+      'description': 'Normal activity patterns detected',
+    },
+    {
+      'type': 'resolved',
+      'title': 'Fall Alert - Living Room',
+      'time': '2 days ago',
+      'description': 'Confirmed fall, assistance provided',
+    },
+  ];
+  
   // Demo controls for UGA Hacks presentation
   bool _showDemoControls = true;
 
@@ -1558,9 +1975,9 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    _buildCaregiverBadge('Primary: Sarah', Icons.person, true),
+                    _buildCaregiverBadge('Primary: Stuti', Icons.person, true),
                     const SizedBox(width: 8),
-                    _buildCaregiverBadge('Secondary: Mike', Icons.person_outline, false),
+                    _buildCaregiverBadge('Secondary: Saachi', Icons.person_outline, false),
                   ],
                 ),
                 
@@ -1757,27 +2174,6 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
   }
 
   Widget _buildRecentEventsSection() {
-    final events = [
-      {
-        'type': 'resolved',
-        'title': 'False Alert - Kitchen',
-        'time': 'Yesterday 11:30 AM',
-        'description': 'Motion detected, cat knocked over item',
-      },
-      {
-        'type': 'resolved',
-        'title': 'Daily Check Complete',
-        'time': 'Yesterday 9:00 AM',
-        'description': 'Normal activity patterns detected',
-      },
-      {
-        'type': 'resolved',
-        'title': 'Fall Alert - Living Room',
-        'time': '2 days ago',
-        'description': 'Confirmed fall, assistance provided',
-      },
-    ];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1791,7 +2187,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
         ),
         const SizedBox(height: 16),
         
-        ...events.map((event) => Padding(
+        ...recentEvents.map((event) => Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: _buildEventCard(event),
         )).toList(),
@@ -1834,7 +2230,7 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
               children: [
                 Row(
                   children: [
-                    Expanded(
+                    Flexible(
                       child: Text(
                         event['title']!,
                         style: const TextStyle(
@@ -1889,7 +2285,30 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
             color: GuardianColors.darkBg,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          child: const EventDetailScreen(),
+          child: EventDetailScreen(
+            onConfirmFall: () {
+              setState(() {
+                recentEvents.insert(0, {
+                  'type': 'resolved',
+                  'title': 'Confirmed Fall - Living Room',
+                  'time': 'Just now',
+                  'description': 'Fall confirmed, emergency protocols activated',
+                });
+                _hasActiveAlert = false;
+              });
+            },
+            onMarkFalseAlert: () {
+              setState(() {
+                recentEvents.insert(0, {
+                  'type': 'resolved',
+                  'title': 'False Alert - Living Room',
+                  'time': 'Just now',
+                  'description': 'Marked as false alert, system will learn from this',
+                });
+                _hasActiveAlert = false;
+              });
+            },
+          ),
         ),
       ),
     );
@@ -2075,7 +2494,14 @@ class _LiveAlertsHomeState extends State<LiveAlertsHome>
 
 // Screen 3: Event Detail (Premium Explainability)  
 class EventDetailScreen extends StatefulWidget {
-  const EventDetailScreen({super.key});
+  final VoidCallback? onConfirmFall;
+  final VoidCallback? onMarkFalseAlert;
+  
+  const EventDetailScreen({
+    super.key,
+    this.onConfirmFall,
+    this.onMarkFalseAlert,
+  });
 
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
@@ -2197,78 +2623,76 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   }
 
   Widget _buildLoadingView() {
-    return Expanded(
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [GuardianColors.lightGreen, GuardianColors.lightBlue],
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [GuardianColors.lightGreen, GuardianColors.lightBlue],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: GuardianColors.lightGreen.withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 5,
                 ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: GuardianColors.lightGreen.withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.analytics,
-                size: 60,
-                color: GuardianColors.darkBg,
-              ),
+              ],
             ),
-            const SizedBox(height: 32),
-            const Text(
-              'Analyzing Fall Event',
-              style: TextStyle(
-                color: GuardianColors.textPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+            child: const Icon(
+              Icons.analytics,
+              size: 60,
+              color: GuardianColors.darkBg,
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Processing video and sensor data...',
-              style: TextStyle(
-                color: GuardianColors.textSecondary,
-                fontSize: 16,
-              ),
+          ),
+          const SizedBox(height: 32),
+          const Text(
+            'Analyzing Fall Event',
+            style: TextStyle(
+              color: GuardianColors.textPrimary,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
             ),
-            const SizedBox(height: 32),
-            Container(
-              width: 250,
-              height: 6,
-              decoration: BoxDecoration(
-                color: GuardianColors.cardBg,
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: AnimatedBuilder(
-                animation: _progressAnimation,
-                builder: (context, child) {
-                  return FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: _progressAnimation.value,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [GuardianColors.lightGreen, GuardianColors.lightBlue],
-                        ),
-                        borderRadius: BorderRadius.circular(3),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Processing video and sensor data...',
+            style: TextStyle(
+              color: GuardianColors.textSecondary,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 32),
+          Container(
+            width: 250,
+            height: 6,
+            decoration: BoxDecoration(
+              color: GuardianColors.cardBg,
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: AnimatedBuilder(
+              animation: _progressAnimation,
+              builder: (context, child) {
+                return FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: _progressAnimation.value,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [GuardianColors.lightGreen, GuardianColors.lightBlue],
                       ),
+                      borderRadius: BorderRadius.circular(3),
                     ),
-                  );
-                },
-              ),
+                  ),
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -2661,6 +3085,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   void _confirmFall() {
     HapticFeedback.heavyImpact();
+    
+    // Call the callback from parent
+    widget.onConfirmFall?.call();
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Fall confirmed. Emergency protocols activated.'),
@@ -2673,6 +3101,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
 
   void _markFalseAlert() {
     HapticFeedback.lightImpact();
+    
+    // Call the callback from parent
+    widget.onMarkFalseAlert?.call();
+    
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Marked as false alert. System will learn from this.'),
