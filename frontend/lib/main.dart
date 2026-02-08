@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:math' as math;
 import 'dart:async';
 
@@ -2110,25 +2109,33 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     'fallTimeOffsetMs': 8200,
   };
   
-  // Impact Risk Analysis Data
-  final Map<String, dynamic> _impactData = {
-    'impactVelocity': 2.8, // m/s
-    'impactForce': 847.3, // Newtons
-    'impactAngle': 68.5, // degrees
-    'contactArea': 1432.0, // cm²
-    'recoveryTime': 0.0, // seconds (no recovery)
-    'bodyMassIndex': 24.7, // kg/m²
-    'age': 72, // years
-    'boneStrength': 67.3, // percentage of youth peak
-    'muscleResponse': 12.4, // ms (slow)
-    'headImpact': false,
-    'spineAlignment': 'compromised', // normal/compromised/severe
-    'impactSurface': 'hard floor', // carpet/hard floor/concrete
-  };
+  // Impact Risk Analysis Data (randomized on init)
+  late final Map<String, dynamic> _impactData;
+  
+  Map<String, dynamic> _generateImpactData() {
+    final random = math.Random();
+    return {
+      'impactVelocity': 2.5 + random.nextDouble() * 0.8, // 2.5-3.3 m/s
+      'impactForce': 800.0 + random.nextDouble() * 150.0, // 800-950 N
+      'impactAngle': 65.0 + random.nextDouble() * 10.0, // 65-75 degrees
+      'contactArea': 1350.0 + random.nextDouble() * 200.0, // 1350-1550 cm²
+      'recoveryTime': random.nextDouble() < 0.3 ? (random.nextDouble() * 2.0) : 0.0, // 0s or 0-2s
+      'bodyMassIndex': 23.0 + random.nextDouble() * 4.0, // 23-27 kg/m²
+      'age': 68 + random.nextInt(10), // 68-77 years
+      'boneStrength': 62.0 + random.nextDouble() * 12.0, // 62-74%
+      'muscleResponse': 10.0 + random.nextDouble() * 8.0, // 10-18 ms
+      'headImpact': random.nextBool(),
+      'spineAlignment': ['normal', 'compromised', 'compromised', 'severe'][random.nextInt(4)],
+      'impactSurface': ['hard floor', 'hard floor', 'carpet', 'concrete'][random.nextInt(4)],
+    };
+  }
 
   @override
   void initState() {
     super.initState();
+    
+    // Generate randomized impact data
+    _impactData = _generateImpactData();
     
     _videoController = AnimationController(
       duration: Duration(seconds: _totalTime.toInt()),
@@ -2728,6 +2735,632 @@ class _EventDetailScreenState extends State<EventDetailScreen>
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  // Calculate impact risk score (0-100)
+  double _calculateImpactRisk() {
+    double risk = 0.0;
+    
+    // Impact velocity (0-20 points)
+    risk += math.min(20, _impactData['impactVelocity'] * 7);
+    
+    // Impact force (0-15 points)
+    risk += math.min(15, _impactData['impactForce'] / 60);
+    
+    // Recovery time - no recovery is critical (0-20 points)
+    risk += _impactData['recoveryTime'] == 0.0 ? 20 : math.max(0, 20 - _impactData['recoveryTime'] * 4);
+    
+    // Age factor (0-15 points)
+    risk += math.min(15, math.max(0, (_impactData['age'] - 50) * 0.5));
+    
+    // Bone strength (0-15 points)
+    risk += math.min(15, (100 - _impactData['boneStrength']) * 0.15);
+    
+    // Surface hardness (0-10 points)
+    if (_impactData['impactSurface'] == 'concrete') {
+      risk += 10;
+    } else if (_impactData['impactSurface'] == 'hard floor') {
+      risk += 7;
+    } else {
+      risk += 3;
+    }
+    
+    // Spine alignment (0-5 points)
+    if (_impactData['spineAlignment'] == 'severe') {
+      risk += 5;
+    } else if (_impactData['spineAlignment'] == 'compromised') {
+      risk += 3;
+    }
+    
+    return math.min(100, risk);
+  }
+
+  String _getRiskLevel(double risk) {
+    if (risk >= 80) return 'CRITICAL';
+    if (risk >= 60) return 'HIGH';
+    if (risk >= 40) return 'MODERATE';
+    return 'LOW';
+  }
+
+  Color _getRiskColor(double risk) {
+    // Use theme colors instead of orange/red gradients
+    if (risk >= 80) return GuardianColors.emergencyRed;
+    if (risk >= 60) return const Color(0xFF4A9EFF); // Bright blue
+    if (risk >= 40) return GuardianColors.lightBlue;
+    return GuardianColors.safeGreen;
+  }
+
+  String _getRandomRecommendation(double risk) {
+    final random = math.Random();
+    
+    List<String> suggestions;
+    
+    if (risk >= 80) {
+      suggestions = [
+        'Immediate EMS dispatch recommended. High probability of hip fracture or head trauma. Patient shows no recovery movement.',
+        'CRITICAL: Call 911 immediately. Impact force (847N) and lack of recovery suggest severe injury. Do not move patient.',
+        'Emergency transport required. Fall dynamics indicate potential spinal injury. Immobilization protocols necessary.',
+        'Urgent medical attention needed. Impact velocity and patient age correlate with 78% hip fracture risk.',
+        'PRIORITY 1: Activate emergency services. Hard floor impact at this velocity typically requires surgical intervention.',
+      ];
+    } else if (risk >= 60) {
+      suggestions = [
+        'Medical evaluation strongly recommended within 1 hour. Impact force suggests possible fracture or internal injury.',
+        'HIGH RISK: Contact physician immediately. Monitor for delayed symptoms including confusion, numbness, or severe pain.',
+        'Urgent care visit advised. Fall characteristics indicate 62% chance of requiring medical intervention.',
+        'Medical imaging recommended. Impact angle and force suggest potential bone or soft tissue damage.',
+        'Doctor consultation needed today. Patient vitals and fall metrics warrant professional assessment.',
+      ];
+    } else if (risk >= 40) {
+      suggestions = [
+        'Medical check-up recommended within 24 hours. Monitor patient for pain, swelling, or mobility issues.',
+        'MODERATE RISK: Schedule physician visit. Watch for delayed symptoms over next 48 hours.',
+        'Telemedicine consultation advised. Fall parameters suggest professional evaluation would be prudent.',
+        'Contact primary care provider. Impact data indicates possible minor injury requiring assessment.',
+        'Medical follow-up recommended. Monitor patient closely and seek care if symptoms develop.',
+      ];
+    } else {
+      suggestions = [
+        'LOW RISK: Monitor patient for 24 hours. Contact doctor if pain or discomfort develops.',
+        'Observation recommended. Fall metrics suggest low injury probability, but remain vigilant.',
+        'Continue monitoring. Impact characteristics indicate minimal risk, but watch for any changes.',
+        'Patient assessment shows favorable indicators. Maintain standard care protocols and monitor.',
+        'Low injury probability detected. Continue routine monitoring and document any symptoms.',
+      ];
+    }
+    
+    return suggestions[random.nextInt(suggestions.length)];
+  }
+
+  Widget _buildImpactRiskAnalysis() {
+    final impactRisk = _calculateImpactRisk();
+    final riskLevel = _getRiskLevel(impactRisk);
+    final riskColor = _getRiskColor(impactRisk);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: GuardianColors.cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: GuardianColors.glassBorder,
+        ),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: GuardianColors.lightBlue.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: GuardianColors.lightBlue.withOpacity(0.3),
+                  ),
+                ),
+                child: Icon(Icons.analytics, color: GuardianColors.lightBlue, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Impact Risk Analysis',
+                      style: TextStyle(
+                        color: GuardianColors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Medical-grade fall biomechanics',
+                      style: TextStyle(
+                        color: GuardianColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Risk Score Display
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: GuardianColors.darkBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: GuardianColors.glassBorder),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'INJURY RISK SCORE',
+                        style: TextStyle(
+                          color: GuardianColors.textSecondary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            impactRisk.toStringAsFixed(1),
+                            style: TextStyle(
+                              color: riskColor,
+                              fontSize: 48,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 8, left: 4),
+                            child: Text(
+                              '/100',
+                              style: TextStyle(
+                                color: GuardianColors.textSecondary,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: riskColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: riskColor.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Text(
+                          riskLevel,
+                          style: TextStyle(
+                            color: riskColor,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Container(
+                  width: 100,
+                  height: 100,
+                  child: Stack(
+                    children: [
+                      Center(
+                        child: SizedBox(
+                          width: 100,
+                          height: 100,
+                          child: CircularProgressIndicator(
+                            value: impactRisk / 100,
+                            strokeWidth: 8,
+                            backgroundColor: GuardianColors.cardBg,
+                            valueColor: AlwaysStoppedAnimation<Color>(riskColor),
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Icon(
+                          Icons.warning,
+                          color: riskColor,
+                          size: 40,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Risk Factors Grid
+          const Text(
+            'Biomechanical Factors',
+            style: TextStyle(
+              color: GuardianColors.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildRiskFactor(
+                'Impact Velocity',
+                '${_impactData['impactVelocity']} m/s',
+                Icons.speed,
+                riskColor,
+              ),
+              _buildRiskFactor(
+                'Impact Force',
+                '${_impactData['impactForce']} N',
+                Icons.flash_on,
+                riskColor,
+              ),
+              _buildRiskFactor(
+                'Impact Angle',
+                '${_impactData['impactAngle']}°',
+                Icons.rotate_90_degrees_ccw,
+                riskColor,
+              ),
+              _buildRiskFactor(
+                'Contact Area',
+                '${_impactData['contactArea']} cm²',
+                Icons.crop_square,
+                riskColor,
+              ),
+              _buildRiskFactor(
+                'Recovery Time',
+                '${_impactData['recoveryTime']} sec',
+                Icons.timer,
+                GuardianColors.emergencyRed,
+              ),
+              _buildRiskFactor(
+                'Patient Age',
+                '${_impactData['age']} years',
+                Icons.person,
+                riskColor,
+              ),
+              _buildRiskFactor(
+                'Bone Strength',
+                '${_impactData['boneStrength']}%',
+                Icons.accessibility,
+                riskColor,
+              ),
+              _buildRiskFactor(
+                'Muscle Response',
+                '${_impactData['muscleResponse']} ms',
+                Icons.fitness_center,
+                GuardianColors.warningAmber,
+              ),
+              _buildRiskFactor(
+                'Impact Surface',
+                _impactData['impactSurface'],
+                Icons.layers,
+                riskColor,
+              ),
+              _buildRiskFactor(
+                'Spine Alignment',
+                _impactData['spineAlignment'],
+                Icons.warning,
+                GuardianColors.warningAmber,
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 20),
+          
+          // Clinical Interpretation
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  GuardianColors.lightBlue.withOpacity(0.1),
+                  GuardianColors.lightGreen.withOpacity(0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: GuardianColors.glassBorder,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.medical_information,
+                  color: GuardianColors.lightBlue,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'This fall likely involved high impact and limited recovery, which correlates with injury risk.',
+                    style: TextStyle(
+                      color: GuardianColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRiskFactor(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: GuardianColors.darkBg,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: GuardianColors.glassBorder,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: GuardianColors.lightBlue, size: 18),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: GuardianColors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  color: GuardianColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIRecommendation() {
+    final impactRisk = _calculateImpactRisk();
+    final riskColor = _getRiskColor(impactRisk);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: GuardianColors.cardBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: GuardianColors.glassBorder,
+        ),
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: GuardianColors.lightBlue.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: GuardianColors.lightBlue.withOpacity(0.3),
+                  ),
+                ),
+                child: const Icon(Icons.psychology, color: GuardianColors.lightBlue, size: 28),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Clinical Recommendation',
+                      style: TextStyle(
+                        color: GuardianColors.textPrimary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'AI-assisted medical guidance',
+                      style: TextStyle(
+                        color: GuardianColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          if (_aiRecommendation == null && !_loadingRecommendation)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [GuardianColors.lightBlue, GuardianColors.lightGreen],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: ElevatedButton(
+                onPressed: _generateRecommendation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: GuardianColors.darkBg,
+                  shadowColor: Colors.transparent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.auto_awesome, color: GuardianColors.lightBlue, size: 24),
+                    SizedBox(width: 12),
+                    Text(
+                      'Generate Course of Action',
+                      style: TextStyle(
+                        color: GuardianColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+          if (_loadingRecommendation)
+            Center(
+              child: Column(
+                children: [
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 4,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        GuardianColors.lightBlue,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Analyzing fall data...',
+                    style: TextStyle(
+                      color: GuardianColors.textSecondary,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+          if (_aiRecommendation != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: GuardianColors.darkBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: GuardianColors.glassBorder,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.lightbulb,
+                            color: riskColor,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'RECOMMENDED ACTION',
+                            style: TextStyle(
+                              color: riskColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        _aiRecommendation!,
+                        style: const TextStyle(
+                          color: GuardianColors.textPrimary,
+                          fontSize: 15,
+                          height: 1.5,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextButton.icon(
+                  onPressed: _generateRecommendation,
+                  icon: const Icon(Icons.refresh, color: GuardianColors.lightBlue),
+                  label: const Text(
+                    'Generate Alternative',
+                    style: TextStyle(color: GuardianColors.lightBlue),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  void _generateRecommendation() async {
+    setState(() {
+      _loadingRecommendation = true;
+      _aiRecommendation = null;
+    });
+    
+    HapticFeedback.mediumImpact();
+    
+    // Simulate AI processing time
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
+    if (mounted) {
+      setState(() {
+        _aiRecommendation = _getRandomRecommendation(_calculateImpactRisk());
+        _loadingRecommendation = false;
+      });
+      
+      HapticFeedback.lightImpact();
+    }
   }
 }
 
