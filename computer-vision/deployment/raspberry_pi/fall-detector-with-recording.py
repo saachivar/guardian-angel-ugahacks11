@@ -58,7 +58,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 ENABLE_TELEGRAM_ALERTS = True
 
 # FastAPI Backend Configuration
-BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")  # Change to your backend URL
+BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://172.20.153.212:8000")  # Change to your backend URL
 DEVICE_ID = os.getenv("DEVICE_ID", "webcam-01")  # Unique device identifier
 ENABLE_BACKEND_UPLOAD = True  # Set to False to disable backend integration
 
@@ -327,44 +327,40 @@ def write_frame(frame):
             stop_recording()
 
 def upload_to_backend(video_path, timestamp, confidence):
-    """Upload fall event and video to FastAPI backend."""
+    """Upload fall event + video to FastAPI backend."""
     if not ENABLE_BACKEND_UPLOAD:
         return
-    
+
+    if not os.path.exists(video_path):
+        log_message(f"❌ Video file not found: {video_path}")
+        return
+
     try:
-        log_message(f"📤 Uploading to backend: {BACKEND_API_URL}")
-        
-        # First, create the event
-        event_data = {
-            "timestamp": timestamp,
-            "confidence": confidence,
-            "clip_path": os.path.basename(video_path),
-            "device_id": DEVICE_ID
+        log_message(f"📤 Uploading to backend: {BACKEND_API_URL}/upload")
+
+        # Prepare multipart/form-data
+        files = {'file': (os.path.basename(video_path), open(video_path, 'rb'), 'video/mp4')}
+        data = {
+            'device_id': DEVICE_ID,
+            'confidence': float(confidence),
+            'timestamp': timestamp
         }
-        
-        # POST event to /events endpoint
+
         response = requests.post(
-            f"{BACKEND_API_URL}/events",
-            json=event_data,
-            timeout=30
+            f"{BACKEND_API_URL}/upload",
+            files=files,
+            data=data,
+            timeout=60
         )
         response.raise_for_status()
-        
-        log_message(f"✅ Event created on backend: {response.json()}")
-        
-        # Upload the video file (if backend supports file upload)
-        # Note: Adjust this based on your actual backend file upload endpoint
-        if os.path.exists(video_path):
-            with open(video_path, 'rb') as video_file:
-                files = {'file': (os.path.basename(video_path), video_file, 'video/mp4')}
-                # If you have a separate upload endpoint, use it here
-                # For now, the clip_path in the event should reference the file
-                log_message(f"📹 Video ready for retrieval: {os.path.basename(video_path)}")
-        
+
+        log_message(f"✅ Uploaded to backend successfully: {response.json()}")
+
     except requests.exceptions.RequestException as e:
         log_message(f"❌ Backend upload failed: {e}")
     except Exception as e:
         log_message(f"❌ Error during backend upload: {e}")
+
 
 def stop_recording():
     """Stop and finalize video recording."""
