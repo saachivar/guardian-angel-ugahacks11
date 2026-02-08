@@ -57,6 +57,11 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 ENABLE_TELEGRAM_ALERTS = True
 
+# FastAPI Backend Configuration
+BACKEND_API_URL = os.getenv("BACKEND_API_URL", "http://localhost:8000")  # Change to your backend URL
+DEVICE_ID = os.getenv("DEVICE_ID", "webcam-01")  # Unique device identifier
+ENABLE_BACKEND_UPLOAD = True  # Set to False to disable backend integration
+
 CAMERA_INDEX = 0
 FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
@@ -135,7 +140,9 @@ recording_state = {
     'is_recording': False,
     'post_fall_frames_remaining': 0,
     'video_writer': None,
-    'filename': None
+    'filename': None,
+    'fall_timestamp': None,  # ISO timestamp when fall was confirmed
+    'fall_confidence': 0.0   # Confidence score of the fall
 }
 
 # --- Helper Functions ---
@@ -319,6 +326,46 @@ def write_frame(frame):
         if recording_state['post_fall_frames_remaining'] <= 0:
             stop_recording()
 
+def upload_to_backend(video_path, timestamp, confidence):
+    """Upload fall event and video to FastAPI backend."""
+    if not ENABLE_BACKEND_UPLOAD:
+        return
+    
+    try:
+        log_message(f"📤 Uploading to backend: {BACKEND_API_URL}")
+        
+        # First, create the event
+        event_data = {
+            "timestamp": timestamp,
+            "confidence": confidence,
+            "clip_path": os.path.basename(video_path),
+            "device_id": DEVICE_ID
+        }
+        
+        # POST event to /events endpoint
+        response = requests.post(
+            f"{BACKEND_API_URL}/events",
+            json=event_data,
+            timeout=30
+        )
+        response.raise_for_status()
+        
+        log_message(f"✅ Event created on backend: {response.json()}")
+        
+        # Upload the video file (if backend supports file upload)
+        # Note: Adjust this based on your actual backend file upload endpoint
+        if os.path.exists(video_path):
+            with open(video_path, 'rb') as video_file:
+                files = {'file': (os.path.basename(video_path), video_file, 'video/mp4')}
+                # If you have a separate upload endpoint, use it here
+                # For now, the clip_path in the event should reference the file
+                log_message(f"📹 Video ready for retrieval: {os.path.basename(video_path)}")
+        
+    except requests.exceptions.RequestException as e:
+        log_message(f"❌ Backend upload failed: {e}")
+    except Exception as e:
+        log_message(f"❌ Error during backend upload: {e}")
+
 def stop_recording():
     """Stop and finalize video recording."""
     global recording_state
@@ -327,10 +374,20 @@ def stop_recording():
         recording_state['video_writer'].release()
         log_message(f"✅ RECORDING COMPLETE: {recording_state['filename']} (15s total: {PRE_FALL_SECONDS}s pre + {POST_FALL_SECONDS}s post)")
         
+        # Upload to backend after recording completes
+        if recording_state['filename'] and recording_state['fall_timestamp']:
+            upload_to_backend(
+                recording_state['filename'],
+                recording_state['fall_timestamp'],
+                recording_state['fall_confidence']
+            )
+        
     recording_state['is_recording'] = False
     recording_state['video_writer'] = None
     recording_state['filename'] = None
     recording_state['post_fall_frames_remaining'] = 0
+    recording_state['fall_timestamp'] = None
+    recording_state['fall_confidence'] = 0.0
 
 # --- PROCESS FRAME ---
 def process_frame(frame, pose_landmarker, frame_count, fps):
@@ -391,13 +448,20 @@ def process_frame(frame, pose_landmarker, frame_count, fps):
                 if fall_confirmation_counter >= FALL_CONFIRMATION_FRAMES:
                     current_time = time.time()
                     if (current_time - last_fall_event_time) > FALL_EVENT_COOLDOWN:
+                        # Store fall metadata
+                        fall_timestamp_iso = datetime.now().isoformat()
+                        
                         if ENABLE_RECORDING and not recording_state['is_recording']:
+                            # Store metadata for later upload
+                            recording_state['fall_timestamp'] = fall_timestamp_iso
+                            recording_state['fall_confidence'] = float(fall_probability)
+                            
                             if start_recording(fps):
                                 write_buffered_frames()  # Write pre-fall frames
                         
                         # Send alert
                         confidence_str = f"{fall_probability * 100:.2f}%"
-                        fall_message = f"🚨 FALL CONFIRMED! Confidence: {confidence_str} (verified over {fall_confirmation_counter} frames)"
+                        fall_message = f"🚨 FALL CONFIRMED! Timestamp: {fall_timestamp_iso}, Confidence: {confidence_str} (verified over {fall_confirmation_counter} frames)"
                         log_message(fall_message)
                         send_telegram_message(fall_message)
                         last_fall_event_time = current_time
