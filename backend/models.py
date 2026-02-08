@@ -8,4 +8,12 @@ class EventCreate(BaseModel):
 
 class Event(EventCreate):
     id: int
-    resolved: int
+    resolved: int 
+
+class SignupRequest(BaseModel):
+    username: str
+    password: str
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str

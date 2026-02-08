@@ -1,10 +1,11 @@
 
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Header, Depends
 from fastapi.responses import FileResponse
 from pymongo import MongoClient
 from bson import ObjectId
 from datetime import datetime
 import os
+
 
 
 # MongoDB setup
@@ -33,7 +34,7 @@ async def upload_event(
     device_id: str = Form(...),
     confidence: float = Form(...),
     timestamp: str = Form(None),
-    file: UploadFile = File(...)
+    file: UploadFile = File(... )
 ):
     # Ensure clips folder exists
     os.makedirs("clips", exist_ok=True)
@@ -63,7 +64,13 @@ async def upload_event(
         "id": str(result.inserted_id),
         "event": serialize_event(event)
     }
+    
+    # Fetch the inserted doc to return it nicely
+    saved_event = events_collection.find_one({"_id": result.inserted_id})
 
-    for route in app.routes:
-        print(route.path, route.methods)
+    return {
+        "status": "success",
+        "id": str(result.inserted_id),
+        "event": serialize_event(saved_event)
+    }
 
