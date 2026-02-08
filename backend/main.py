@@ -16,6 +16,9 @@ events_collection = db["events"]
 
 app = FastAPI(title="Guardian Angel Backend")
 
+# Placeholder URL for Flutter backend (replace when you know it)
+FLUTTER_SERVER_URL = "http://flutter-backend.example.com/upload"
+
 def serialize_event(doc):
     return {
         "id": str(doc["_id"]),
@@ -67,6 +70,24 @@ async def upload_event(
     
     # Fetch the inserted doc to return it nicely
     saved_event = events_collection.find_one({"_id": result.inserted_id})
+
+    # ------------------------------
+    # Forward everything to Flutter backend
+    # ------------------------------
+    try:
+        with open(path, "rb") as f:
+            files = {"file": (filename, f, "video/mp4")}
+            data = {
+                "device_id": device_id,
+                "confidence": confidence,
+                "timestamp": timestamp
+            }
+            # POST to Flutter server
+            resp = requests.post(FLUTTER_SERVER_URL, files=files, data=data, timeout=10)
+            resp.raise_for_status()
+            flutter_response = resp.json()
+    except Exception as e:
+        flutter_response = {"error": str(e)}
 
     return {
         "status": "success",
