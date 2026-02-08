@@ -23,6 +23,7 @@ except Exception:
         raise
 
 import time
+import sys
 from collections import deque
 import requests
 import argparse
@@ -34,6 +35,21 @@ from mediapipe.tasks.python.core.base_options import BaseOptions
 from mediapipe import Image
 from mediapipe.tasks.python.vision.core import image as mp_image_core
 
+# Voice Intervention imports
+try:
+    import pyttsx3
+    TTS_AVAILABLE = True
+except ImportError:
+    print("WARNING: pyttsx3 not installed. Voice alerts disabled. Install with: pip install pyttsx3")
+    TTS_AVAILABLE = False
+
+try:
+    import speech_recognition as sr
+    STT_AVAILABLE = True
+except ImportError:
+    print("WARNING: speech_recognition not installed. Voice listening disabled. Install with: pip install SpeechRecognition pyaudio")
+    STT_AVAILABLE = False
+
 # --- Configuration ---
 MODEL_PATH = 'fall_detection_transformer.tflite'
 INPUT_TIMESTEPS = 30
@@ -41,12 +57,17 @@ FALL_CONFIDENCE_THRESHOLD = 0.70  # Adjusted for demo/testing
 MIN_KEYPOINT_CONFIDENCE_FOR_NORMALIZATION = 0.3
 
 # Fall confirmation settings (prevent false positives from proximity)
-FALL_CONFIRMATION_FRAMES = 8  # Must detect fall for 8 consecutive frames (~0.25-0.5 sec)
+FALL_CONFIRMATION_FRAMES = 15  # Must detect fall for 15 consecutive frames (~0.5 sec) to avoid walking false positives
 fall_confirmation_counter = 0  # Tracks consecutive fall detections
 
 # Logging settings
 ENABLE_VERBOSE_LOGGING = True  # Set to False to reduce log output
 LOG_FALL_PROBABILITIES = True  # Log fall probabilities for analysis
+
+# Voice Intervention settings
+ENABLE_VOICE_INTERVENTION = True  # Speak and listen after fall detection
+VOICE_LISTEN_TIMEOUT = 15  # Seconds to wait for voice response (starts after calibration)
+VOICE_PHRASE_TIME_LIMIT = 15  # Max recording time for speech
 
 # MediaPipe pose model
 POSE_MODEL_PATH = os.environ.get('MP_POSE_MODEL_PATH', 'pose_landmarker_lite.task')
@@ -142,8 +163,14 @@ recording_state = {
     'video_writer': None,
     'filename': None,
     'fall_timestamp': None,  # ISO timestamp when fall was confirmed
-    'fall_confidence': 0.0   # Confidence score of the fall
+    'fall_confidence': 0.0,   # Confidence score of the fall
+    'voice_response': None,   # Voice response from user after fall
+    'processing_complete': False  # Flag to prevent double execution
 }
+
+# TTS and STT engines will be initialized after log_message is defined
+tts_engine = None
+recognizer = None
 
 # --- Helper Functions ---
 def log_message(message):
@@ -170,6 +197,153 @@ def send_telegram_message(message):
             print(f"INFO: Telegram message sent successfully.")
     except requests.exceptions.RequestException as e:
         log_message(f"Error sending Telegram message: {e}")
+
+# --- VOICE INTERVENTION FUNCTIONS ---
+def initialize_voice_systems():
+    """Initialize TTS and STT systems after log_message is available."""
+    global tts_engine, recognizer
+    
+    # Initialize TTS engine
+    if TTS_AVAILABLE:
+        try:
+            tts_engine = pyttsx3.init()
+            # Adjust voice properties
+            tts_engine.setProperty('rate', 150)  # Speed of speech
+            tts_engine.setProperty('volume', 1.0)  # Volume (0.0 to 1.0)
+            log_message("🔊 Text-to-Speech initialized")
+        except Exception as e:
+            log_message(f"⚠️  TTS initialization failed: {e}")
+    
+    # Initialize speech recognizer
+    if STT_AVAILABLE:
+        recognizer = sr.Recognizer()
+        log_message("🎤 Speech Recognition initialized")
+
+def speak_alert(message):
+    """Speak a message out loud using text-to-speech."""
+    if not ENABLE_VOICE_INTERVENTION:
+        return
+    
+    try:
+        log_message(f"🔊 Speaking: '{message}'")
+        print(f"\n{'='*60}\n🔊 SPEAKING NOW: '{message}'\n{'='*60}\n", flush=True)
+        
+        # Use macOS 'say' command for reliable audio playback
+        # This works better than pyttsx3 when video is running
+        import subprocess
+        subprocess.run(['say', '-v', 'Samantha', '-r', '175', message], check=True)
+        
+        print(f"✅ Audio playback completed\n", flush=True)
+        
+        # Wait for audio device to be released before next operation
+        time.sleep(0.5)
+    except Exception as e:
+        log_message(f"⚠️  TTS error: {e}")
+        print(f"⚠️  TTS error: {e}\n", flush=True)
+
+def listen_for_response():
+    """Listen for voice response from the user."""
+    if not ENABLE_VOICE_INTERVENTION or not STT_AVAILABLE or recognizer is None:
+        return None
+    
+    try:
+        # Wait longer for audio device to be fully released from TTS
+        log_message("🎤 Preparing microphone (waiting for audio device)...")
+        time.sleep(2.5)  # Increased delay to ensure audio device is free
+        
+        log_message("🎤 Listening for voice response...")
+        print("\n" + "="*60, flush=True)
+        print("  🎤 MICROPHONE ACTIVATED - PLEASE SPEAK NOW!", flush=True)
+        print("="*60 + "\n", flush=True)
+        
+        # Try to initialize microphone with retries
+        mic_initialized = False
+        for attempt in range(3):
+            try:
+                # Use device_index=0 to explicitly select MacBook Pro Microphone
+                with sr.Microphone(device_index=0) as source:
+                    mic_initialized = True
+                    # Lower energy threshold for better sensitivity
+                    recognizer.energy_threshold = 300  # Lower = more sensitive (default ~4000)
+                    recognizer.dynamic_energy_threshold = False
+                    
+                    # Adjust for ambient noise with shorter duration
+                    log_message("🎤 Adjusting for ambient noise (1 second)...")
+                    print("🔊 Calibrating microphone...\n", flush=True)
+                    recognizer.adjust_for_ambient_noise(source, duration=1.0)
+                    
+                    log_message(f"🎤 READY! Speak now - listening for up to {VOICE_LISTEN_TIMEOUT} seconds...")
+                    print("" + "*"*60, flush=True)
+                    print("  *** SPEAK NOW - SYSTEM IS LISTENING ***", flush=True)
+                    print("" + "*"*60 + "\n", flush=True)
+                    
+                    # Listen for speech with increased timeout
+                    try:
+                        audio = recognizer.listen(
+                            source,
+                            timeout=VOICE_LISTEN_TIMEOUT,
+                            phrase_time_limit=VOICE_PHRASE_TIME_LIMIT
+                        )
+                    except KeyboardInterrupt:
+                        log_message("⚠️  Listening interrupted by user")
+                        return "INTERRUPTED"
+                    
+                    log_message("🎤 Audio captured! Processing with Google Speech Recognition...")
+                    print("\n🔄 Processing your response (this may take a few seconds)...\n", flush=True)
+                    
+                    # Recognize speech using Google Speech Recognition
+                    text = recognizer.recognize_google(audio)
+                    log_message(f"🗣️  Heard: '{text}'")
+                    print("\n" + "="*60, flush=True)
+                    print(f"  ✅ YOU SAID: '{text}'", flush=True)
+                    print("="*60 + "\n", flush=True)
+                    return text
+                    
+            except (OSError, AttributeError) as mic_error:
+                if attempt < 2:
+                    log_message(f"⚠️  Microphone init attempt {attempt+1} failed, retrying...")
+                    time.sleep(1.0)
+                else:
+                    raise mic_error
+        
+        if not mic_initialized:
+            log_message("❌ Failed to initialize microphone after 3 attempts")
+            return "ERROR"
+            
+    except sr.WaitTimeoutError:
+        log_message("⏱️  No response heard (timeout - no speech detected)")
+        print("\n⏱️  No speech detected within timeout period\n", flush=True)
+        return "NO_RESPONSE"
+    except sr.UnknownValueError:
+        log_message("⚠️  Could not understand audio (speech was unclear or too quiet)")
+        print("\n⚠️  Speech detected but could not understand - please speak louder and clearer\n", flush=True)
+        return "UNCLEAR"
+    except sr.RequestError as e:
+        log_message(f"❌ Speech recognition error: {e}")
+        print(f"\n❌ Speech recognition service error: {e}\n", flush=True)
+        return "ERROR"
+    except OSError as e:
+        log_message(f"❌ Microphone error (permission denied?): {e}")
+        print(f"\n❌ Microphone not accessible - check System Settings > Privacy > Microphone\n", flush=True)
+        return "ERROR"
+    except AttributeError as e:
+        log_message(f"❌ Microphone initialization error: {e}")
+        print(f"\n❌ Audio device error - microphone may be in use by another app\n", flush=True)
+        return "ERROR"
+    except KeyboardInterrupt:
+        raise  # Re-raise to allow clean shutdown
+    except Exception as e:
+        log_message(f"❌ Unexpected error during listening: {e}")
+        import traceback
+        log_message(f"Traceback: {traceback.format_exc()}")
+        print(f"\n❌ Unexpected error: {e}\n", flush=True)
+        return "ERROR"
+    except Exception as e:
+        log_message(f"❌ Unexpected error during listening: {e}")
+        import traceback
+        log_message(f"Traceback: {traceback.format_exc()}")
+        print(f"\n❌ Error: {e}\n", flush=True)
+        return "ERROR"
 
 def get_kpt_indices_training_order(keypoint_name):
     if keypoint_name not in KEYPOINT_DICT_TRAINING:
@@ -326,7 +500,7 @@ def write_frame(frame):
         if recording_state['post_fall_frames_remaining'] <= 0:
             stop_recording()
 
-def upload_to_backend(video_path, timestamp, confidence):
+def upload_to_backend(video_path, timestamp, confidence, voice_response=None):
     """Upload fall event + video to FastAPI backend."""
     if not ENABLE_BACKEND_UPLOAD:
         return
@@ -336,7 +510,14 @@ def upload_to_backend(video_path, timestamp, confidence):
         return
 
     try:
+        # Handle no-response cases
+        if voice_response in ["UNCLEAR", "NO_RESPONSE", "ERROR"]:
+            voice_response = "patient did not respond"
+            log_message(f"📤 Patient did not respond - sending to backend")
+        
         log_message(f"📤 Uploading to backend: {BACKEND_API_URL}/upload")
+        if voice_response:
+            log_message(f"📤 Including voice response: {voice_response}")
 
         # Prepare multipart/form-data
         files = {'file': (os.path.basename(video_path), open(video_path, 'rb'), 'video/mp4')}
@@ -345,6 +526,10 @@ def upload_to_backend(video_path, timestamp, confidence):
             'confidence': float(confidence),
             'timestamp': timestamp
         }
+        
+        # Add voice response if available
+        if voice_response:
+            data['voice_response'] = voice_response
 
         response = requests.post(
             f"{BACKEND_API_URL}/upload",
@@ -366,17 +551,60 @@ def stop_recording():
     """Stop and finalize video recording."""
     global recording_state
     
+    # Prevent double execution
+    if recording_state.get('processing_complete', False):
+        return
+    
+    recording_state['processing_complete'] = True
+    
     if recording_state['video_writer'] is not None:
         recording_state['video_writer'].release()
         log_message(f"✅ RECORDING COMPLETE: {recording_state['filename']} (15s total: {PRE_FALL_SECONDS}s pre + {POST_FALL_SECONDS}s post)")
         
+        # Voice intervention: Speak and listen (wrapped in try/except to prevent crashes)
+        voice_response = None
+        if ENABLE_VOICE_INTERVENTION:
+            try:
+                print("\n" + "="*60)
+                print("  🔊 VOICE INTERVENTION STARTING...")
+                print("="*60 + "\n", flush=True)
+                
+                speak_alert("A fall was detected. Are you okay? Please speak now if you are able to.")
+                voice_response = listen_for_response()
+                recording_state['voice_response'] = voice_response
+                log_message(f"✅ Voice intervention completed. Response: {voice_response}")
+                
+                print("\n" + "="*60)
+                print(f"  🗣️  USER RESPONSE: {voice_response}")
+                print("="*60 + "\n", flush=True)
+                
+                # Comforting message after response
+                speak_alert("Your information has been shared. Help is on the way. Please stay calm.")
+                
+                print("\n" + "="*60)
+                print("  ✅ FALL DETECTION COMPLETE - EXITING")
+                print("="*60 + "\n", flush=True)
+            except Exception as e:
+                log_message(f"⚠️  Voice intervention failed: {e}")
+                import traceback
+                log_message(f"Traceback: {traceback.format_exc()}")
+                voice_response = "ERROR"
+        
         # Upload to backend after recording completes
         if recording_state['filename'] and recording_state['fall_timestamp']:
-            upload_to_backend(
-                recording_state['filename'],
-                recording_state['fall_timestamp'],
-                recording_state['fall_confidence']
-            )
+            try:
+                upload_to_backend(
+                    recording_state['filename'],
+                    recording_state['fall_timestamp'],
+                    recording_state['fall_confidence'],
+                    voice_response
+                )
+            except Exception as e:
+                log_message(f"⚠️  Backend upload failed: {e}")
+        
+        # Exit app after fall handling is complete
+        log_message("🛑 Fall detection cycle complete - shutting down")
+        sys.exit(0)
         
     recording_state['is_recording'] = False
     recording_state['video_writer'] = None
@@ -384,6 +612,8 @@ def stop_recording():
     recording_state['post_fall_frames_remaining'] = 0
     recording_state['fall_timestamp'] = None
     recording_state['fall_confidence'] = 0.0
+    recording_state['voice_response'] = None
+    recording_state['processing_complete'] = False
 
 # --- PROCESS FRAME ---
 def process_frame(frame, pose_landmarker, frame_count, fps):
@@ -443,7 +673,8 @@ def process_frame(frame, pose_landmarker, frame_count, fps):
                 # TRIGGER RECORDING only after consecutive confirmations
                 if fall_confirmation_counter >= FALL_CONFIRMATION_FRAMES:
                     current_time = time.time()
-                    if (current_time - last_fall_event_time) > FALL_EVENT_COOLDOWN:
+                    # Don't process new falls if we're already handling one
+                    if (current_time - last_fall_event_time) > FALL_EVENT_COOLDOWN and not recording_state.get('processing_complete', False):
                         # Store fall metadata
                         fall_timestamp_iso = datetime.now().isoformat()
                         
@@ -459,6 +690,10 @@ def process_frame(frame, pose_landmarker, frame_count, fps):
                         confidence_str = f"{fall_probability * 100:.2f}%"
                         fall_message = f"🚨 FALL CONFIRMED! Timestamp: {fall_timestamp_iso}, Confidence: {confidence_str} (verified over {fall_confirmation_counter} frames)"
                         log_message(fall_message)
+                        print("\n" + "="*60)
+                        print(f"  🚨 FALL DETECTED! Confidence: {confidence_str}")
+                        print("  📹 Recording 15-second video clip...")
+                        print("="*60 + "\n", flush=True)
                         send_telegram_message(fall_message)
                         last_fall_event_time = current_time
                         fall_confirmation_counter = 0  # Reset after triggering
@@ -578,6 +813,9 @@ def main(source_type, file_path=None):
     global frame_buffer
     
     log_message("Starting Fall Detection System with Recording...")
+    
+    # Initialize voice systems (TTS and STT)
+    initialize_voice_systems()
     
     if source_type == "webcam":
         cap = cv2.VideoCapture(CAMERA_INDEX)

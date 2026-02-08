@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 import 'dart:math' as math;
 import 'dart:async';
 
@@ -2093,6 +2094,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
   final double _totalTime = 15.0;
   final double _fallTimestamp = 8.2;
   
+  // AI Recommendation state
+  bool _loadingRecommendation = false;
+  String? _aiRecommendation;
+  
   // Mock explainability data
   final Map<String, dynamic> _fallData = {
     'confidence': 0.89,
@@ -2103,6 +2108,22 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     'rulesMet': 3,
     'rulesTotal': 3,
     'fallTimeOffsetMs': 8200,
+  };
+  
+  // Impact Risk Analysis Data
+  final Map<String, dynamic> _impactData = {
+    'impactVelocity': 2.8, // m/s
+    'impactForce': 847.3, // Newtons
+    'impactAngle': 68.5, // degrees
+    'contactArea': 1432.0, // cm²
+    'recoveryTime': 0.0, // seconds (no recovery)
+    'bodyMassIndex': 24.7, // kg/m²
+    'age': 72, // years
+    'boneStrength': 67.3, // percentage of youth peak
+    'muscleResponse': 12.4, // ms (slow)
+    'headImpact': false,
+    'spineAlignment': 'compromised', // normal/compromised/severe
+    'impactSurface': 'hard floor', // carpet/hard floor/concrete
   };
 
   @override
@@ -2281,6 +2302,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
           _buildVideoPlayer(),
           const SizedBox(height: 24),
           _buildExplainabilityCard(),
+          const SizedBox(height: 24),
+          _buildImpactRiskAnalysis(),
+          const SizedBox(height: 24),
+          _buildAIRecommendation(),
           const SizedBox(height: 24),
           _buildActionButtons(),
         ],
