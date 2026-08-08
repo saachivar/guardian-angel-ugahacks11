@@ -1,6 +1,6 @@
 # 🛡️ Guardian Angel
 
-> **🏆 Winner at UGAHacks11**  
+> **🏆 Overall Best Hack at UGAHacks11**  
 > *A real-time, edge-computed fall detection and multi-channel caregiver alert system.*
 
 ---
