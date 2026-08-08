@@ -1,6 +1,6 @@
 # 🛡️ Guardian Angel
 
-> **🏆 Winner at [Insert Hackathon Name]**  
+> **🏆 Winner at UGAHacks11**  
 > *A real-time, edge-computed fall detection and multi-channel caregiver alert system.*
 
 ---
@@ -61,4 +61,4 @@ When a fall occurs, the system detects it instantly on-device using edge compute
 
 ## 👥 Authors
 
-Built with ❤️ at **[Insert Hackathon Name]**.
+Built by Stuti Thummala, Saachi Varshney, and Anisha Dhawan at **UGAHacks11**.
