@@ -1,11 +1,11 @@
-# 🛡️ Guardian Angel
+#  Guardian Angel
 
-> **🏆 Overall Best Hack at UGAHacks11**  
+> ** Overall Best Hack at UGAHacks11**  
 > *A real-time, edge-computed fall detection and multi-channel caregiver alert system.*
 
 ---
 
-## 📌 Overview
+##  Overview
 
 **Guardian Angel** is an IoT-enabled safety system built to protect seniors and individuals with mobility challenges. 
 
@@ -13,17 +13,17 @@ When a fall occurs, the system detects it instantly on-device using edge compute
 
 ---
 
-## ✨ Key Features
+##  Key Features
 
-- **⚡ On-Device Fall Detection:** Real-time pose estimation and fall classification running locally on edge hardware with minimal latency.
-- **📹 Automated Clip Capture:** Automatically records and stores short video context clips upon event detection.
-- **📱 Caregiver Mobile App:** Real-time push alerts, live status updates, and instant video playback for immediate triage.
-- **🗣️ Smart Home Integration:** AWS Lambda-powered Amazon Alexa voice broadcasts within the home for hands-free warnings.
-- **🔒 Privacy & Safety Focused:** Optimized to reduce false negatives while processing keypoints locally before cloud dispatch.
+- ** On-Device Fall Detection:** Real-time pose estimation and fall classification running locally on edge hardware with minimal latency.
+- ** Automated Clip Capture:** Automatically records and stores short video context clips upon event detection.
+- ** Caregiver Mobile App:** Real-time push alerts, live status updates, and instant video playback for immediate triage.
+- ** Smart Home Integration:** AWS Lambda-powered Amazon Alexa voice broadcasts within the home for hands-free warnings.
+- ** Privacy & Safety Focused:** Optimized to reduce false negatives while processing keypoints locally before cloud dispatch.
 
 ---
 
-## 🏗️ System Architecture & Tech Stack
+##  System Architecture & Tech Stack
 
 [ Edge Device / Camera ] ──(MediaPipe + TFLite)──> [ Fall Detected ]
 │
@@ -40,7 +40,7 @@ When a fall occurs, the system detects it instantly on-device using edge compute
 
 ---
 
-## 🧠 Engineering & ML Insights
+##  Engineering & ML Insights
 
 * **Pose Estimation:** Extracted 17 human body keypoints per frame using MediaPipe Pose.
 * **Temporal Sequence Modeling:** Leveraged a custom-trained TFLite Transformer architecture over traditional LSTMs/Bi-LSTMs to better capture long-range spatial-temporal motion patterns.
@@ -49,7 +49,7 @@ When a fall occurs, the system detects it instantly on-device using edge compute
 
 ---
 
-## 🚀 Future Roadmap
+##  Future Roadmap
 
 - [ ] **Multi-Person Detection:** Scaling pose tracking algorithms for shared living spaces and care facilities.
 - [ ] **Dataset Expansion:** Diversifying training data across varied angles, lighting conditions, and body types.
