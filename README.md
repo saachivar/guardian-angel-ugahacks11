@@ -15,11 +15,11 @@ When a fall occurs, the system detects it instantly on-device using edge compute
 
 ##  Key Features
 
-- ** On-Device Fall Detection:** Real-time pose estimation and fall classification running locally on edge hardware with minimal latency.
-- ** Automated Clip Capture:** Automatically records and stores short video context clips upon event detection.
-- ** Caregiver Mobile App:** Real-time push alerts, live status updates, and instant video playback for immediate triage.
-- ** Smart Home Integration:** AWS Lambda-powered Amazon Alexa voice broadcasts within the home for hands-free warnings.
-- ** Privacy & Safety Focused:** Optimized to reduce false negatives while processing keypoints locally before cloud dispatch.
+- **On-Device Fall Detection:** Real-time pose estimation and fall classification running locally on edge hardware with minimal latency.
+- **Automated Clip Capture:** Automatically records and stores short video context clips upon event detection.
+- **Caregiver Mobile App:** Real-time push alerts, live status updates, and instant video playback for immediate triage.
+- **Smart Home Integration:** AWS Lambda-powered Amazon Alexa voice broadcasts within the home for hands-free warnings.
+- **Privacy & Safety Focused:** Optimized to reduce false negatives while processing keypoints locally before cloud dispatch.
 
 ---
 
